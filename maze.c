@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <signal.h>
 
 #define UP 0
 #define LEFT 1
@@ -35,37 +36,112 @@ struct cell {
 	int flag;
 };
 struct cell Maze[SIZEX][SIZEY];
+int currentX, currentY;
 
 unsigned int opposite();
 unsigned int randomDirection();
-void mazeBacktrack(int x, int y);
-void mazeCarvePassage(int x, int y, int direction);
-void mazeGrow();
 bool isVisited(int x, int y);
 bool areAllNeighborsVisited(int x, int y);
+
+void mazeBacktrack(int x, int y);
+void mazeGrow(int currentX, int currentY);
+
+void cellCarvePassage(int x, int y, int direction);
+void cellSetPrev(int x, int y, int direction);
+
+void mazeReset();
+
 static void opposite_test();
 static void randomDirection_test();
 static void mazeBacktrack_test();
-static void mazeCarvePassage_test();
+static void cellCarvePassage_test();
 static void mazeGrow_test();
 static void isVisited_test();
 static void areAllNeighborsVisited_test();
+static void cellSetPrev_test();
 
-bool isVisited(int x, int y) {
-	return (Maze[x][y].visited);
+void mazeGenerate(int currentX, int currentY) {
+	long numin = 1;
+
+	do {
+		mazeBacktrack(currentX, currentY);
+		mazeGrow(currentX, currentY);
+		numin++;
+	} while (numin < (SIZEX)*(SIZEY));
 }
 
-bool areAllNeighborsVisited(int x, int y) {
+void mazeGrow(int currentX, int currentY) {
+	int completed = 0;
+	int newX, newY;
 
-	bool up = (y == 0) ? 1 : isVisited(x, y-1);
-	bool down = (y == SIZEX) ? 1 : isVisited(x, y+1);
-	bool left = (x == 0) ? 1 : isVisited(x-1, y);
-	bool right = (x == SIZEY) ? 1 : isVisited(x+1, y);
+	do {
+		int newDirection = randomDirection();
+		// printf("randomDirection: %i \n", newDirection);
+		switch (newDirection) {
+			case UP:
+				newX = currentX;
+				newY = currentY-1;
+			break;
+			case DOWN:
+				newX = currentX;
+				newY = currentY+1;
+			break;
+			case LEFT:
+				newX = currentX-1;
+				newY = currentY;
+			break;
+			case RIGHT:
+				newX = currentX+1;
+				newY = currentY;
+			break;
+		}
 
-	return (up && down && left && right);
+		// printf("currentX: %i, currentY %i\n", currentX, currentY);
+		// printf("newX: %i, newY %i\n", newX, newY);
+
+		// Error Handler
+		if (newX < 0 || newY < 0) continue;
+		// printf("\nPass -------------------\n\n");
+		// printf("Maze[newX][newY] %d\n", Maze[newX][newY].visited);
+
+		if (!isVisited(newX, newY)) {
+			// printf("\n Pass isVisited false\n\n");
+			cellCarvePassage(currentX, currentY, newDirection);
+			Maze[newX][newY].prevX = currentX;
+			Maze[newX][newY].prevY = currentY;
+
+			// equivalent currentY++ or currentY-- depending from direction
+			currentX = newX;
+			currentY = newY;
+			// printf("newX: %i, newY %i\n", currentX, currentY);
+			completed = 1;
+		}
+	} while (!completed);
+	Maze[currentX][currentY].visited = true;
 }
 
-void mazeCarvePassage(int x, int y, int direction) {
+
+int main() {
+	srand((unsigned int)time(NULL));
+	
+	// Test
+	opposite_test();
+	randomDirection_test();
+	cellCarvePassage_test();
+	isVisited_test();
+	areAllNeighborsVisited_test();
+	mazeGrow_test();
+	return 0;
+}
+
+void mazeBacktrack(int currentX, int currentY) {
+	while (areAllNeighborsVisited(currentX, currentY)) {
+		currentX = Maze[currentX][currentY].prevX;
+		currentY = Maze[currentX][currentY].prevY;
+	}
+}
+
+void cellCarvePassage(int x, int y, int direction) {
 	switch (direction) {
 		case UP:
 			if (y == 0) return;
@@ -90,41 +166,37 @@ void mazeCarvePassage(int x, int y, int direction) {
 	}
 }
 
-
-void mazeBacktrack(int currentX, int currentY) {
-	while (areAllNeighborsVisited(currentX, currentY)) {
-		currentX = Maze[currentX][currentY].prevX;
-		currentY = Maze[currentX][currentY].prevY;
-	}
-}
-
-void mazeGenerate(void) {
-	int currentX = 0, currentY = 0;
-	int goingTo;
-	bool completed;
-	long numin=1;
-
-	do {
-		mazeBacktrack(currentX, currentY);
-//		mazeGrow();
-	} while (numin < (SIZEX)*(SIZEY));
-}
-
-
-
-int main() {
-	
-	// Test
-	opposite_test();
-	randomDirection_test();
-	mazeCarvePassage_test();
-	isVisited_test();
-	areAllNeighborsVisited_test();
-	return 0;
-}
-
 unsigned int opposite(int direction) {
 	return (direction + 2) % 4;
+}
+unsigned int randomDirection() {
+	return rand() % 4;
+}
+bool isVisited(int x, int y) {
+	return (Maze[x][y].visited);
+}
+bool areAllNeighborsVisited(int x, int y) {
+
+	bool up = (y == 0) ? 1 : isVisited(x, y-1);
+	bool down = (y == SIZEX) ? 1 : isVisited(x, y+1);
+	bool left = (x == 0) ? 1 : isVisited(x-1, y);
+	bool right = (x == SIZEY) ? 1 : isVisited(x+1, y);
+
+	return (up && down && left && right);
+}
+void mazeReset() {
+	int x, y;
+	for (x = 0; x <= SIZEX; x++) {
+		for (y=0; y <= SIZEY; y++) {
+			Maze[x][y].visited = 0;
+			Maze[x][y].up = NULL;
+			Maze[x][y].down = NULL;
+			Maze[x][y].left = NULL;
+			Maze[x][y].right = NULL;
+			Maze[x][y].prevX = 0;
+			Maze[x][y].prevY = 0;
+		}
+	}
 }
 
 static void opposite_test() {
@@ -133,38 +205,9 @@ static void opposite_test() {
 	assert( opposite(LEFT) == RIGHT);
 	assert( opposite(RIGHT) == LEFT);
 }
-unsigned int randomDirection() {
-	return rand() % 4;
-}
 static void randomDirection_test() {
-	assert(randomDirection() == UP || randomDirection() == DOWN || randomDirection() == LEFT || randomDirection() == RIGHT);
-}
-static void mazeCarvePassage_test() {
-	mazeCarvePassage(2,3, UP);
-	assert(Maze[2][3].up == &Maze[2][2]);
-	mazeCarvePassage(0,0, UP);
-	assert(Maze[0][0].up == NULL);
-	mazeCarvePassage(0,0, LEFT);
-	assert(Maze[0][0].left == NULL);
-
-	mazeCarvePassage(SIZEX,SIZEY, DOWN);
-	assert(Maze[SIZEX][SIZEY].down == NULL);
-	mazeCarvePassage(SIZEX,SIZEY, RIGHT);
-	assert(Maze[SIZEX][SIZEY].right == NULL);
-}
-
-static void mazeBacktrack_test() {
-	int currentX = 0, currentY = 0;
-	Maze[1][0].prevX = 0;
-	Maze[1][0].prevY = 0;
-
-	Maze[2][0].prevX = 1;
-	Maze[2][0].prevY = 0;
-
-	Maze[3][0].prevX = 2;
-	Maze[3][0].prevY = 0;
-
-	mazeBacktrack(currentX, currentY);
+	int aDirection = randomDirection();
+	assert(aDirection == UP || aDirection == DOWN || aDirection == LEFT || aDirection == RIGHT);
 }
 static void isVisited_test() {
 	Maze[0][0].visited = false;
@@ -202,3 +245,41 @@ static void areAllNeighborsVisited_test() {
 
 	assert(!areAllNeighborsVisited(2,2));
 }
+
+static void cellSetPrev_test() {
+}
+static void cellCarvePassage_test() {
+	cellCarvePassage(2,3, UP);
+	assert(Maze[2][3].up == &Maze[2][2]);
+	cellCarvePassage(0,0, UP);
+	assert(Maze[0][0].up == NULL);
+	cellCarvePassage(0,0, LEFT);
+	assert(Maze[0][0].left == NULL);
+
+	cellCarvePassage(SIZEX,SIZEY, DOWN);
+	assert(Maze[SIZEX][SIZEY].down == NULL);
+	cellCarvePassage(SIZEX,SIZEY, RIGHT);
+	assert(Maze[SIZEX][SIZEY].right == NULL);
+}
+
+static void mazeGrow_test() {
+	mazeReset();
+	mazeGrow(0,0);
+	assert(Maze[0][1].visited || Maze[1][0].visited);
+	mazeGrow(2,2);
+	assert(Maze[2][3].visited || Maze[3][2].visited || Maze[2][1].visited || Maze[1][2].visited);
+}
+static void mazeBacktrack_test() {
+	int currentX = 0, currentY = 0;
+	Maze[1][0].prevX = 0;
+	Maze[1][0].prevY = 0;
+
+	Maze[2][0].prevX = 1;
+	Maze[2][0].prevY = 0;
+
+	Maze[3][0].prevX = 2;
+	Maze[3][0].prevY = 0;
+
+	mazeBacktrack(currentX, currentY);
+}
+
