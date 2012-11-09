@@ -1,18 +1,3 @@
-// #include "maze.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-#include <assert.h>
-#include <signal.h>
-
-#define UP 0
-#define LEFT 1
-#define DOWN 2
-#define RIGHT 3
-#define SIZEX 50
-#define SIZEY 50
-
 /*
   +--------------+--------------+--------------+
   |              |              |              |
@@ -27,39 +12,38 @@
   |   x-1, y+1   |     x, y+1   |   x+1, y+1   |
   |              |              |              |
   +--------------+--------------+--------------+
+
 */
 
-struct cell {
-	bool visited;
-	struct cell *up, *down, *left, *right;
-	int prevX, prevY;
-	int flag;
-};
+#include "maze.h"
+
+#define UP 0
+#define LEFT 1
+#define DOWN 2
+#define RIGHT 3
+#define SIZEX 50
+#define SIZEY 50
+
 struct cell Maze[SIZEX][SIZEY];
 int currentX, currentY;
 
-unsigned int opposite();
-unsigned int randomDirection();
-bool isVisited(int x, int y);
-bool areAllNeighborsVisited(int x, int y);
+int main() {
+	srand((unsigned int)time(NULL));
 
-void mazeBacktrack(int x, int y);
-void mazeGrow(int currentX, int currentY);
+	// Test
+	opposite_test();
+	randomDirection_test();
+	cellCarvePassage_test();
+	isVisited_test();
+	areAllNeighborsVisited_test();
+	mazeGrow_test();
+	return 0;
+}
+/*
 
-void cellCarvePassage(int x, int y, int direction);
-void cellSetPrev(int x, int y, int direction);
+  Maze Functions
 
-void mazeReset();
-
-static void opposite_test();
-static void randomDirection_test();
-static void mazeBacktrack_test();
-static void cellCarvePassage_test();
-static void mazeGrow_test();
-static void isVisited_test();
-static void areAllNeighborsVisited_test();
-static void cellSetPrev_test();
-
+*/
 void mazeGenerate(int currentX, int currentY) {
 	long numin = 1;
 
@@ -69,7 +53,6 @@ void mazeGenerate(int currentX, int currentY) {
 		numin++;
 	} while (numin < (SIZEX)*(SIZEY));
 }
-
 void mazeGrow(int currentX, int currentY) {
 	int completed = 0;
 	int newX, newY;
@@ -119,27 +102,32 @@ void mazeGrow(int currentX, int currentY) {
 	} while (!completed);
 	Maze[currentX][currentY].visited = true;
 }
-
-
-int main() {
-	srand((unsigned int)time(NULL));
-	
-	// Test
-	opposite_test();
-	randomDirection_test();
-	cellCarvePassage_test();
-	isVisited_test();
-	areAllNeighborsVisited_test();
-	mazeGrow_test();
-	return 0;
-}
-
 void mazeBacktrack(int currentX, int currentY) {
 	while (areAllNeighborsVisited(currentX, currentY)) {
 		currentX = Maze[currentX][currentY].prevX;
 		currentY = Maze[currentX][currentY].prevY;
 	}
 }
+void mazeReset() {
+	int x, y;
+	for (x = 0; x <= SIZEX; x++) {
+		for (y=0; y <= SIZEY; y++) {
+			Maze[x][y].visited = 0;
+			Maze[x][y].up = NULL;
+			Maze[x][y].down = NULL;
+			Maze[x][y].left = NULL;
+			Maze[x][y].right = NULL;
+			Maze[x][y].prevX = 0;
+			Maze[x][y].prevY = 0;
+		}
+	}
+}
+
+/*
+
+  Cell Functions
+
+*/
 
 void cellCarvePassage(int x, int y, int direction) {
 	switch (direction) {
@@ -166,6 +154,12 @@ void cellCarvePassage(int x, int y, int direction) {
 	}
 }
 
+/*
+
+  Other Functions
+
+*/
+
 unsigned int opposite(int direction) {
 	return (direction + 2) % 4;
 }
@@ -184,20 +178,12 @@ bool areAllNeighborsVisited(int x, int y) {
 
 	return (up && down && left && right);
 }
-void mazeReset() {
-	int x, y;
-	for (x = 0; x <= SIZEX; x++) {
-		for (y=0; y <= SIZEY; y++) {
-			Maze[x][y].visited = 0;
-			Maze[x][y].up = NULL;
-			Maze[x][y].down = NULL;
-			Maze[x][y].left = NULL;
-			Maze[x][y].right = NULL;
-			Maze[x][y].prevX = 0;
-			Maze[x][y].prevY = 0;
-		}
-	}
-}
+
+/*
+
+  Tests
+
+*/
 
 static void opposite_test() {
 	assert( opposite(UP) == DOWN);
@@ -246,8 +232,6 @@ static void areAllNeighborsVisited_test() {
 	assert(!areAllNeighborsVisited(2,2));
 }
 
-static void cellSetPrev_test() {
-}
 static void cellCarvePassage_test() {
 	cellCarvePassage(2,3, UP);
 	assert(Maze[2][3].up == &Maze[2][2]);
@@ -262,6 +246,9 @@ static void cellCarvePassage_test() {
 	assert(Maze[SIZEX][SIZEY].right == NULL);
 }
 
+static void mazeGenerate_test() {
+	
+}
 static void mazeGrow_test() {
 	mazeReset();
 	mazeGrow(0,0);
