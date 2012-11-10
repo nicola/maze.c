@@ -7,7 +7,7 @@
 
 struct cell {
 	bool visited;
-	struct cell *up, *down, *left, *right;
+	bool up, down, left, right;
 	int prevX, prevY;
 	int flag;
 };
@@ -23,11 +23,12 @@ bool areAllNeighborsVisited(int x, int y);
 
 void mazeBacktrack(int x, int y);
 	static void mazeBacktrack_test();
-void mazeGrow(int currentX, int currentY);
-	static void mazeGrow_test();
-void mazeReset();
 void mazeGenerate();
 	static void mazeGenerate_test();
+void mazeGrow(int currentX, int currentY);
+	static void mazeGrow_test();
+void mazeInitialize();
+void mazeReset();
 
 void cellCarvePassage(int x, int y, int direction);
 	static void cellCarvePassage_test();
