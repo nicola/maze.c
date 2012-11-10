@@ -25,7 +25,7 @@ void mazeBacktrack(int *pointerX, int *pointerY);
 	static void mazeBacktrack_test();
 void mazeGenerate();
 	static void mazeGenerate_test();
-void mazeGrow(int currentX, int currentY);
+void mazeGrow(int *pointerX, int *pointerY);
 	static void mazeGrow_test();
 void mazeInitialize();
 void mazeReset();

@@ -38,7 +38,7 @@ int main() {
 	areAllNeighborsVisited_test();
 	mazeGrow_test();
 	mazeBacktrack_test();
-	// mazeGenerate_test();
+	//mazeGenerate_test();
 	return 0;
 }
 /*
@@ -56,17 +56,17 @@ void mazeInitialize() { //TODO TO BE TESTED
 	}
 	return;
 }
-void mazeGenerate(int currentX, int currentY) {
+void mazeGenerate(int *pointerX, int *pointerY) {
 	long numin = 1;
 
 	do {
-		printf("I am at (%i, %i)\n", currentX, currentY);
-//		mazeBacktrack(currentX, currentY);
-		mazeGrow(currentX, currentY);
+		printf("I am at (%i, %i)\n", *pointerX, *pointerY);
+		mazeBacktrack(pointerX, pointerY);
+		mazeGrow(pointerX, pointerY);
 		numin++;
 	} while (numin < (SIZEX)*(SIZEY)); // TODO check better
 }
-void mazeGrow(int currentX, int currentY) {
+void mazeGrow(int *pointerX, int *pointerY) {
 	int completed = 0;
 	int newX, newY;
 
@@ -75,20 +75,20 @@ void mazeGrow(int currentX, int currentY) {
 		// printf("randomDirection: %i \n", newDirection);
 		switch (newDirection) {
 			case UP:
-				newX = currentX;
-				newY = currentY-1;
+				newX = *pointerX;
+				newY = *pointerY-1;
 			break;
 			case DOWN:
-				newX = currentX;
-				newY = currentY+1;
+				newX = *pointerX;
+				newY = *pointerY+1;
 			break;
 			case LEFT:
-				newX = currentX-1;
-				newY = currentY;
+				newX = *pointerX-1;
+				newY = *pointerY;
 			break;
 			case RIGHT:
-				newX = currentX+1;
-				newY = currentY;
+				newX = *pointerX+1;
+				newY = *pointerY;
 			break;
 		}
 
@@ -102,18 +102,18 @@ void mazeGrow(int currentX, int currentY) {
 
 		if (!isVisited(newX, newY)) {
 			// printf("\n Pass isVisited false\n\n");
-			cellCarvePassage(currentX, currentY, newDirection);
-			Maze[newX][newY].prevX = currentX;
-			Maze[newX][newY].prevY = currentY;
+			cellCarvePassage(*pointerX, *pointerY, newDirection);
+			Maze[newX][newY].prevX = *pointerX;
+			Maze[newX][newY].prevY = *pointerY;
 
 			// equivalent currentY++ or currentY-- depending from direction
-			currentX = newX;
-			currentY = newY;
+			*pointerX = newX;
+			*pointerY = newY;
 			// printf("newX: %i, newY %i\n", currentX, currentY);
 			completed = 1;
 		}
 	} while (!completed);
-	Maze[currentX][currentY].visited = true;
+	Maze[*pointerX][*pointerY].visited = true;
 }
 void mazeBacktrack(int *pointerX, int *pointerY) {
 	int newX, newY;
@@ -293,9 +293,13 @@ static void mazeGenerate_test() {
 }
 static void mazeGrow_test() {
 	mazeReset();
-	mazeGrow(0,0);
+	currentX = 0;
+	currentY = 0;
+	mazeGrow(&currentX,&currentY);
 	assert(Maze[0][1].visited || Maze[1][0].visited);
-	mazeGrow(2,2);
+	currentX = 2;
+	currentY = 2;
+	mazeGrow(&currentX,&currentY);
 	assert(Maze[2][3].visited || Maze[3][2].visited || Maze[2][1].visited || Maze[1][2].visited);
 }
 static void mazeBacktrack_test() { //TODO
