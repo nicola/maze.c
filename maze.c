@@ -46,12 +46,12 @@ int main() {
   Maze Functions
 
 */
-void mazeInitialize() {
+void mazeInitialize() { //TODO TO BE TESTED
 	int x, y;
 	for(x = 0; x <= SIZEX; x++){
 		for(y = 0; y <= SIZEY; y++){
+			//All maze cells have all walls existing by default, except the perimeter cells.
 			Maze[x][y].visited   = (x == 0 || x == SIZEX || y == 0 || y == SIZEY) ? 1 : 0;
-	//All maze cells have all walls existing by default, except the perimeter cells.
 		}
 	}
 	return;
@@ -61,7 +61,7 @@ void mazeGenerate(int currentX, int currentY) {
 
 	do {
 		printf("I am at (%i, %i)\n", currentX, currentY);
-		mazeBacktrack(currentX, currentY);
+//		mazeBacktrack(currentX, currentY);
 		mazeGrow(currentX, currentY);
 		numin++;
 	} while (numin < (SIZEX)*(SIZEY)); // TODO check better
@@ -115,14 +115,30 @@ void mazeGrow(int currentX, int currentY) {
 	} while (!completed);
 	Maze[currentX][currentY].visited = true;
 }
-void mazeBacktrack(int currentX, int currentY) {
-	printf("areAllNeighborsVisited: %d \n", areAllNeighborsVisited(currentX, currentY));
-	while (areAllNeighborsVisited(currentX, currentY)) {
-		printf("BEFORE currentX %i, currentY %i\n", currentX, currentY);
-		printf("mazeBacktrack loop: looping\n");
-		currentX = Maze[currentX][currentY].prevX;
-		currentY = Maze[currentX][currentY].prevY;
-		printf("AFTER currentX %i, currentY %i\n", currentX, currentY);
+void mazeBacktrack(int *pointerX, int *pointerY) {
+	int newX, newY;
+	
+	// printf("\tareAllNeighborsVisited: %d \n\n", areAllNeighborsVisited(*pointerX, *pointerY));
+
+	while (areAllNeighborsVisited(*pointerX, *pointerY)) {
+
+		// printf("\tcurrentX %i, currentY %i\n", *pointerX, *pointerY);
+		// printf("\tprevX %i, prevY %i\n", Maze[*pointerX][*pointerY].prevX, Maze[*pointerX][*pointerY].prevY);
+
+		newX = Maze[*pointerX][*pointerY].prevX;
+		newY = Maze[*pointerX][*pointerY].prevY;
+		*pointerX = newX;
+		*pointerY = newY;
+
+		// printf("\tNew: currentX %i, currentY %i\n", *pointerX, *pointerY);
+		// printf("\tareAllNeighborsVisited: %d \n\n", areAllNeighborsVisited(*pointerX, *pointerY));
+		
+		if (*pointerX == Maze[*pointerX][*pointerY].prevX && *pointerY == Maze[*pointerX][*pointerY].prevY) {
+
+			//printf("\n\n Break! \n\n");
+
+			break; // THIS WILL NEVER HAPPEN, WILL IT?
+		}
 	}
 }
 void mazeReset() {
@@ -139,6 +155,7 @@ void mazeReset() {
 			Maze[x][y].prevY = 0;
 		}
 	}
+	currentX = currentY = 0;
 }
 
 /*
@@ -296,6 +313,9 @@ static void mazeBacktrack_test() { //TODO
 	Maze[1][1].visited = 1;
 	Maze[2][2].visited = 1;
 	Maze[3][1].visited = 1;
+	Maze[0][0].visited = 1;
+	Maze[0][1].visited = 1;
+	Maze[1][2].visited = 1;
 
 	Maze[1][1].visited = 1;
 	Maze[1][1].prevX = 1;
@@ -305,10 +325,20 @@ static void mazeBacktrack_test() { //TODO
 	Maze[1][0].prevX = 0;
 	Maze[1][0].prevY = 0;
 
-	printf("mazeBacktrack loop: started\n");
-	mazeBacktrack(2,1);
+	currentX = 2;
+	currentY = 1;
+	// printf("mazeBacktrack loop: started\n");
+	// printf("I am at (%i, %i)\n", currentX, currentY); // STAAAAACK OVERFLOOOOOOW
+	mazeBacktrack(&currentX, &currentY);
+	// printf("I am at (%i, %i)\n", currentX, currentY); // STAAAAACK OVERFLOOOOOOW
+	// printf("mazeBacktrack loop: terminated\n\n");
 	assert(currentX == 0 && currentY == 0);
-	printf("mazeBacktrack loop: terminated\n");
 
+	currentX = 1;
+	currentY = 2;
+	// printf("I am at (%i, %i)\n", currentX, currentY); // STAAAAACK OVERFLOOOOOOW
+	mazeBacktrack(&currentX, &currentY);
+	// printf("I am at (%i, %i)\n", currentX, currentY); // STAAAAACK OVERFLOOOOOOW
+	// printf("mazeBacktrack loop: terminated\n\n");
+	assert(currentX == 1 && currentY == 2);
 }
-

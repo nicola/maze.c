@@ -21,7 +21,7 @@ bool isVisited(int x, int y);
 bool areAllNeighborsVisited(int x, int y);
 	static void areAllNeighborsVisited_test();
 
-void mazeBacktrack(int x, int y);
+void mazeBacktrack(int *pointerX, int *pointerY);
 	static void mazeBacktrack_test();
 void mazeGenerate();
 	static void mazeGenerate_test();
