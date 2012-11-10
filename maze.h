@@ -32,3 +32,5 @@ void mazeReset();
 
 void cellCarvePassage(int x, int y, int direction);
 	static void cellCarvePassage_test();
+	
+void savebmp(int xspecial, int yspecial);
