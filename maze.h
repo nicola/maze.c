@@ -9,6 +9,8 @@ unsigned int opposite();
   static void opposite_test();
 unsigned int randomDirection();
   static void randomDirection_test();
+char * timeString();
+
 bool isVisited(int, int);
   static void isVisited_test();
 bool areAllNeighborsVisited(int, int);

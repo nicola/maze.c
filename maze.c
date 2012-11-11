@@ -90,51 +90,41 @@ void mazeGrow(int *pointerX, int *pointerY) {
   int newDirection;
 
   do {
+    newX = *pointerX;
+    newY = *pointerY;
     newDirection = randomDirection();
     switch (newDirection) {
-      case UP:
-        newX = *pointerX;
-        newY = *pointerY-1;
-      break;
-      case DOWN:
-        newX = *pointerX;
-        newY = *pointerY+1;
-      break;
-      case LEFT:
-        newX = *pointerX-1;
-        newY = *pointerY;
-      break;
-      case RIGHT:
-        newX = *pointerX+1;
-        newY = *pointerY;
-      break;
+      case UP: newY--; break;
+      case DOWN: newY++; break;
+      case LEFT: newX--; break;
+      case RIGHT: newX++; break;
     }
     // Error Handler
     if (newX < 0 || newY < 0 || newX > SIZEX || newY > SIZEY) continue;
 
     if (!isVisited(newX, newY)) {
       Maze[newX][newY].visited = true;
+      cellCarvePassage(*pointerX, *pointerY, newDirection);
       completed = 1;
     }
   } while (!completed);
-
-  cellCarvePassage(*pointerX, *pointerY, newDirection);
 
   *pointerX = newX;
   *pointerY = newY;
 }
 void mazeBacktrack(int *pointerX, int *pointerY) {
-  int newX, newY;
+  int prevX, prevY;
 
   #ifdef DEBUG
   printf(" [ ");
   #endif
   while (areAllNeighborsVisited(*pointerX, *pointerY)) {
 
-    newX = Maze[*pointerX][*pointerY].prevX;
-    newY = Maze[*pointerX][*pointerY].prevY;
-    *pointerX = newX;
-    *pointerY = newY;
+    prevX = Maze[*pointerX][*pointerY].prevX;
+    prevY = Maze[*pointerX][*pointerY].prevY;
+    *pointerX = prevX;
+    *pointerY = prevY;
+
     #ifdef DEBUG
     printf(">(%i,%i)", *pointerX, *pointerY);
     #endif
@@ -176,13 +166,7 @@ void mazeDraw(bool solution) {
   char fileSolutionName[200];
   FILE * fileMaze;
   FILE * fileSolution;
-  time_t timer; //TODO function
-  struct tm* timeInfo;
-  char timeStr[16];
-
-  time(&timer);
-  timeInfo = localtime(&timer);
-  strftime(timeStr, 16, "%Y%d%m%H%M%S", timeInfo);
+  char * timeStr = timeString();
   
   sprintf(fileMazeName, "%s_%ix%i.maze", timeStr, SIZEX, SIZEY); // TODO MD5
   fileMaze = fopen(fileMazeName, "wt");
@@ -285,6 +269,19 @@ unsigned int opposite(int direction) {
 unsigned int randomDirection() {
   return rand() % 4;
 }
+char * timeString() {
+  time_t timer; //TODO function
+  struct tm* timeInfo;
+  static char timeStr[16];
+
+  time(&timer);
+  timeInfo = localtime(&timer);
+  strftime(timeStr, 16, "%Y%d%m%H%M%S", timeInfo);
+
+  char * ptrTimeStr = timeStr;
+  return ptrTimeStr;
+}
+
 bool isVisited(int x, int y) {
   if (x < 0 || y < 0 || x > SIZEX || y > SIZEY) return false;
   return (Maze[x][y].visited);
