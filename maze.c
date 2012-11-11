@@ -40,6 +40,8 @@ struct drawing Solution;
 struct cell Grid[SIZEX+1][SIZEY+1];
 int currentX, currentY;
 long numin = 1;
+struct coords initialPoint = {.x = 0, .y = 0};
+struct coords finalPoint = {.x = 0, .y = 0, .depth = &Grid[0][0].depth};
 
 int main() {
   
@@ -119,12 +121,19 @@ void mazeGrow(int *pointerX, int *pointerY) {
 
   *pointerX = newX;
   *pointerY = newY;
+
+  if (*(finalPoint.depth) < Grid[newX][newY].depth) { //TODO put somewhere else
+    finalPoint.x = newX;
+    finalPoint.y = newY;
+    *finalPoint.depth = Grid[newX][newY].depth;
+  }
+  //printf("\nMAXDEPTH = (%i,%i) %i\n", finalPoint.x, finalPoint.y, *finalPoint.depth);
 }
 void mazeBacktrack(int *pointerX, int *pointerY) {
   int prevX, prevY;
 
   #ifdef DEBUG
-  printf(" [ ");
+  printf("[");
   #endif
   while (areAllNeighborsVisited(*pointerX, *pointerY)) {
 
@@ -145,7 +154,7 @@ void mazeBacktrack(int *pointerX, int *pointerY) {
     }
   }
   #ifdef DEBUG
-  printf(" ] ");
+  printf(" ]\n");
   #endif
 }
 
@@ -155,13 +164,13 @@ void mazeSolve(int positionX, int positionY) {
   // maze backtrack with the one with highest depth (hopefully on borders)
 }
 
-void drawLine(bool onlySolution, int x1, int x2, int x3, int x4) {
+void drawLine(int x1, int x2, int x3, int x4) {
   x1 += PADDINGTOP;
   x3 += PADDINGTOP;
   x2 += PADDINGLEFT;
   x4 += PADDINGLEFT;
+  fprintf(Maze.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
   fprintf(Solution.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
-  if (!onlySolution) fprintf(Maze.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
   #ifdef DEBUG
   #else DEBUG
   printf("DL %i %i %i %i\n", x1, x2, x3, x4);
@@ -175,22 +184,38 @@ void mazeDraw(bool solution) {
   Maze.file = fopen(Maze.name, "wt");
   Solution.file = fopen(Solution.name, "wt");
 
-  // Loop and find biggest depth
+  // Draw the maze grid
   for (x = 0; x <= SIZEX; x++){
     for (y = 0; y <= SIZEY; y++){
       if (!Grid[x][y].up) {
-        drawLine(0, x*SCALE, y*SCALE, x*(SCALE)+SCALE, y*SCALE);
+        drawLine(x*SCALE, y*SCALE, x*(SCALE)+SCALE, y*SCALE);
       }
       if (!Grid[x][y].left) {
-        drawLine(0, x*SCALE, y*SCALE, x*SCALE, y*(SCALE)+SCALE);
+        drawLine(x*SCALE, y*SCALE, x*SCALE, y*(SCALE)+SCALE);
       }
     }
   }
-  drawLine(0, 0, (SIZEY+1)*SCALE, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
-  drawLine(0, (SIZEX+1)*SCALE, 0, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
-
-
+  drawLine(0, (SIZEY+1)*SCALE, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
+  drawLine((SIZEX+1)*SCALE, 0, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
   fclose(Maze.file);
+
+  // Backtrack the longest path and draw solution
+
+  int tempX = finalPoint.x, tempY = finalPoint.y;
+  #ifdef DEBUG
+  printf("\nMAXDEPTH = (%i,%i) %i\n", finalPoint.x, finalPoint.y, *finalPoint.depth);
+  #endif
+
+  do {
+    #ifdef DEBUG
+    printf("FROM (%i,%i):%i", tempX, tempY, Grid[tempX][tempY].depth);
+    printf("\tTO (%i,%i):%i\n", Grid[tempX][tempY].prevX, Grid[tempX][tempY].prevY, Grid[Grid[tempX][tempY].prevX][Grid[tempX][tempY].prevY].depth);
+    #endif
+    int tempX2 = Grid[tempX][tempY].prevX;
+    tempY = Grid[tempX][tempY].prevY;
+    tempX = tempX2;
+  } while (!(initialPoint.x == tempX && initialPoint.y == tempY));
+
   fclose(Solution.file);
   return;
 }
@@ -255,7 +280,10 @@ void cellCarvePassage(int prevX, int prevY, int direction) {
   // Set new depth
   Grid[x][y].depth = Grid[prevX][prevY].depth + 1;
   #ifdef DEBUG
-  printf("I am at (%i, %i) depth: %li  [prev:(%i,%i) depth: %li] \n", x, y, Grid[x][y].depth, prevX, prevY, Grid[prevX][prevY].depth);
+//  printf("I am at (%i, %i) depth: %i  [prev:(%i=%i,%i=%i) depth: %i] \n", x, y, Grid[x][y].depth, prevX, Grid[x][y].prevX, prevY, Grid[x][y].prevY, Grid[prevX][prevY].depth);
+  printf("[from(%i, %i):%i]", Grid[x][y].prevX, Grid[x][y].prevY, Grid[Grid[x][y].prevX][Grid[x][y].prevY].depth);
+  printf("\tto(%i, %i):%i ", x, y, Grid[x][y].depth);
+  printf("\n");
   #endif
 }
 

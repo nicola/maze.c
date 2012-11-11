@@ -2,7 +2,13 @@ struct cell {
   bool visited;
   bool up, down, left, right;
   int prevX, prevY;
-  long depth;
+  int depth;
+};
+
+struct coords {
+  int x;
+  int y;
+  int * depth;
 };
 
 struct drawing {
@@ -36,4 +42,4 @@ void cellCarvePassage(int, int, int);
 void mazeDraw(bool);
 static void mazeDraw_test();
 
-void drawLine(bool, int, int, int, int);
+void drawLine(int, int, int, int);
