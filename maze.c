@@ -28,26 +28,106 @@
 #define LEFT 1
 #define DOWN 2
 #define RIGHT 3
-#define SIZEX 40
-#define SIZEY 20
 #define SCALE 10
 #define PADDINGTOP 20
 #define PADDINGLEFT 20
-#define DEBUG
+// #define DEBUG
 
+// Game Settings
+int sizeX = 20;
+int sizeY = 10;
+int level = 5;
+int game = 1;
+
+// Maze Generation
 struct drawing Maze;
 struct drawing Solution;
-struct cell Grid[SIZEX+1][SIZEY+1];
 int currentX, currentY;
-long numin = 1;
-struct coords initialPoint = {.x = 0, .y = 0};
-struct coords finalPoint = {.x = 0, .y = 0, .depth = &Grid[0][0].depth};
+struct cell Grid[500][500];
+struct coords initialPoint;
+struct coords finalPoint;
 
-int main() {
-  
+void usage(void)
+{
+  printf("Usage:\n");
+  printf("  -x<int>        Horizontal cells (default: 20)\n");
+  printf("  -y<int>        Vertical cells (default: 10)\n");
+  printf("  -l<int>        Level from 1 to 10 (default: 10)\n");
+  printf("  -g<int>        Game: 1 for Mouse&cheese, 2 for Escape (default: 1)\n");
+  printf("  -s             Silent mode, make me shut up\n");
+  exit (8);
+}
+
+int main(int argc, char *argv[]) {
+
+  // Set randomness
   srand((unsigned int)time(NULL));
+
+  // If no input, suggest to ask for help
+  if (!argv[1]) printf("Type \"-h\" for information on available commands.\n");
+
+  // Looping for command line inputs
+  while ((argc > 1) && (argv[1][0] == '-')) {
+    switch (argv[1][1]) {
+      case 'x': sizeX = atoi(&argv[1][2]); break;
+      case 'y': sizeY = atoi(&argv[1][2]); break;
+      case 'l': level = atoi(&argv[1][2]); break;
+      case 'g': game = atoi(&argv[1][2]); break;
+      case 'h': usage(); break;
+      default:
+      printf("\nmaze: *** Command: %s not found.  Stop.\n", argv[1]);
+      printf("maze: *** Exiting from the maze, you are at safe\n\n", argv[1]);
+      usage();
+    }
+    ++argv;
+    --argc;
+  }
+
+  // Validation of command inputs
+  if (sizeX < 4 || sizeX > 500) {
+    printf("\nmaze: *** -x%i not in range [4-500].  Stop.\n", sizeX);
+    printf("\nUsage:\n");
+    printf("  -x<int>        Horizontal cells [4-500] (default: 20)\n");
+    exit(8);
+  }
+  if (sizeY < 4 || sizeX > 500) {
+    printf("\nmaze: *** -y%i not in range [4-500].  Stop.\n", sizeY);
+    printf("\nUsage:\n");
+    printf("  -y<int>        Vertical cells [4-500] (default: 20)\n");
+    exit(8);
+  }
+  if (level < 1 || level > 10) {
+    printf("\nmaze: *** -l%i not in range [1-10].  Stop.\n", level);
+    printf("\nUsage:\n");
+    printf("  -l<int>        Level from 1 to 10 (default: 10)\n");
+    exit(8);
+  }
+  
+  if (game != 1 && game != 2) {
+    printf("\nmaze: *** -g%i not in range.  Stop.\n", game);
+    printf("\nUsage:\n");
+    printf("  -g<int>        Game: 1 for Mouse&cheese, 2 for Escape (default: 1)\n");
+    exit(8);
+  }
+
+  if (sizeY > ((sizeX)*3)/2) {
+    printf("maze: ** Warning: for better resolution, make -x equal or bigger than -y");
+  }
+
+  printf("\nYour settings\n");
+  printf("Horizontal cells: %i\n", sizeX);
+  printf("Vertical cells: %i\n", sizeY);
+  printf("Difficulty: %i\n", level);
+  printf("Game: %i\n", game);
+
   mazeInitialize();
-  // Test
+  mazeGenerate(&currentX, &currentY);
+  mazeDraw();
+
+  return 0;
+}
+
+int mainTest(void) {
   opposite_test();
   randomDirection_test();
   cellCarvePassage_test();
@@ -67,31 +147,37 @@ int main() {
 */
 void mazeInitialize() { //TODO TO BE TESTED
 
+  /* Prepare .maze and .solution files */
   char * timeStr = timeString();
-  int x, y;
-  
-  sprintf(Maze.name, "%s_%ix%i.maze", timeStr, SIZEX, SIZEY);
-  sprintf(Solution.name, "%s_%ix%i.solution", timeStr, SIZEX, SIZEY);
+  sprintf(Maze.name, "%s_%ix%i.maze", timeStr, sizeX, sizeY);
+  sprintf(Solution.name, "%s_%ix%i.solution", timeStr, sizeX, sizeY);
 
-  for(x = 0; x <= SIZEX; x++){
-    for(y = 0; y <= SIZEY; y++){
-      //All maze cells have all walls existing by default, except the perimeter cells.
-      //Grid[x][y].visited   = (x == 0 || x == SIZEX || y == 0 || y == SIZEY) ? 1 : 0;
-    }
-  }
-  Grid[0][0].visited = 1;
-  Grid[0][0].up = 1;
+  /* Setting starting point */
+  initialPoint.x = 0;
+  initialPoint.y = 0;
+  Grid[initialPoint.x][initialPoint.y].visited = 1;
+  Grid[initialPoint.x][initialPoint.y].up = 1;
+
+  /* Initializing final point - (will be updated later) */
+  finalPoint.x = 0;
+  finalPoint.y = 0;
+  finalPoint.depth = &Grid[0][0].depth;
+
+  /* Initialize current position equal to the starting point */
+  currentX = initialPoint.x;
+  currentY = initialPoint.y;
+
   return;
 }
 void mazeGenerate(int *pointerX, int *pointerY) {
-  numin = 1;
+  long numin = 1;
 
   do {
     mazeBacktrack(pointerX, pointerY);
     mazeGrow(pointerX, pointerY);
 
     numin++;
-  } while (numin < (SIZEX+1)*(SIZEY+1)); // TODO check better
+  } while (numin < (sizeX+1)*(sizeY+1)); // TODO check better
 
   return;
 }
@@ -111,7 +197,7 @@ void mazeGrow(int *pointerX, int *pointerY) {
       case RIGHT: newX++; break;
     }
     // Error Handler
-    if (newX < 0 || newY < 0 || newX > SIZEX || newY > SIZEY) continue;
+    if (newX < 0 || newY < 0 || newX > sizeX || newY > sizeY) continue;
 
     if (!isVisited(newX, newY)) {
       Grid[newX][newY].visited = true;
@@ -173,8 +259,7 @@ void drawLine(int x1, int x2, int x3, int x4) {
   fprintf(Maze.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
   fprintf(Solution.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
   #ifdef DEBUG
-  #else DEBUG
-  printf("DL %i %i %i %i\n", x1, x2, x3, x4);
+  // printf("DL %i %i %i %i\n", x1, x2, x3, x4);
   #endif
 }
 
@@ -186,7 +271,7 @@ void fillRect(int x1, int x2, int x3, int x4)
 }
 
 
-void mazeDraw(bool solution) {
+void mazeDraw() { //TODO level and game!
   // TODO MOVE SOMEWHERE ELSE (time)
   int x, y;
 
@@ -217,8 +302,8 @@ fprintf(Solution.file,"SC black\n");
 
 
   // Draw the maze grid
-  for (x = 0; x <= SIZEX; x++){
-    for (y = 0; y <= SIZEY; y++){
+  for (x = 0; x <= sizeX; x++){
+    for (y = 0; y <= sizeY; y++){
       if (!Grid[x][y].up) {
         drawLine(x*SCALE, y*SCALE, x*(SCALE)+SCALE, y*SCALE);
       }
@@ -227,8 +312,8 @@ fprintf(Solution.file,"SC black\n");
       }
     }
   }
-  drawLine(0, (SIZEY+1)*SCALE, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
-  drawLine((SIZEX+1)*SCALE, 0, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
+  drawLine(0, (sizeY+1)*SCALE, (sizeX+1)*SCALE, (sizeY+1)*SCALE);
+  drawLine((sizeX+1)*SCALE, 0, (sizeX+1)*SCALE, (sizeY+1)*SCALE);
   fclose(Maze.file);
   fclose(Solution.file);
   return;
@@ -236,8 +321,8 @@ fprintf(Solution.file,"SC black\n");
 
 void mazeReset() {
   int x, y;
-  for (x = 0; x <= SIZEX; x++) {
-    for (y=0; y <= SIZEY; y++) {
+  for (x = 0; x <= sizeX; x++) {
+    for (y=0; y <= sizeY; y++) {
       Grid[x][y].visited = 0;
       Grid[x][y].depth = 0;
       Grid[x][y].up = 0;
@@ -271,7 +356,7 @@ void cellCarvePassage(int prevX, int prevY, int direction) {
       Grid[x][--y].down = 1;
     break;
     case DOWN:
-      if (y == SIZEY) return;
+      if (y == sizeY) return;
       Grid[x][y].down = 1;
       Grid[x][++y].up = 1;
     break;
@@ -281,7 +366,7 @@ void cellCarvePassage(int prevX, int prevY, int direction) {
       Grid[--x][y].right = 1;
     break;
     case RIGHT:
-      if (x == SIZEX) return;
+      if (x == sizeX) return;
       Grid[x][y].right = 1;
       Grid[++x][y].left = 1;
     break;
@@ -327,15 +412,15 @@ char * timeString() {
 }
 
 bool isVisited(int x, int y) {
-  if (x < 0 || y < 0 || x > SIZEX || y > SIZEY) return false;
+  if (x < 0 || y < 0 || x > sizeX || y > sizeY) return false;
   return (Grid[x][y].visited);
 }
 bool areAllNeighborsVisited(int x, int y) {
 
   bool up = (y == 0) ? 1 : isVisited(x, y-1);
-  bool down = (y == SIZEY) ? 1 : isVisited(x, y+1);
+  bool down = (y == sizeY) ? 1 : isVisited(x, y+1);
   bool left = (x == 0) ? 1 : isVisited(x-1, y);
-  bool right = (x == SIZEX) ? 1 : isVisited(x+1, y);
+  bool right = (x == sizeX) ? 1 : isVisited(x+1, y);
 
   return (up && down && left && right);
 }
@@ -376,20 +461,20 @@ static void areAllNeighborsVisited_test() {
   Grid[0][1].visited = true;
   assert(areAllNeighborsVisited(0,0));
 
-  Grid[SIZEX][0].visited = true;
-  Grid[SIZEX-1][0].visited = true;
-  Grid[SIZEX][1].visited = true;
-  assert(areAllNeighborsVisited(SIZEX,0));
+  Grid[sizeX][0].visited = true;
+  Grid[sizeX-1][0].visited = true;
+  Grid[sizeX][1].visited = true;
+  assert(areAllNeighborsVisited(sizeX,0));
 
-  Grid[0][SIZEY].visited = true;
-  Grid[0][SIZEY-1].visited = true;
-  Grid[1][SIZEY].visited = true;
-  assert(areAllNeighborsVisited(0,SIZEY));
+  Grid[0][sizeY].visited = true;
+  Grid[0][sizeY-1].visited = true;
+  Grid[1][sizeY].visited = true;
+  assert(areAllNeighborsVisited(0,sizeY));
 
-  Grid[SIZEX][SIZEY].visited = true;
-  Grid[SIZEX-1][SIZEY].visited = true;
-  Grid[SIZEX][SIZEY-1].visited = true;
-  assert(areAllNeighborsVisited(SIZEX,0));
+  Grid[sizeX][sizeY].visited = true;
+  Grid[sizeX-1][sizeY].visited = true;
+  Grid[sizeX][sizeY-1].visited = true;
+  assert(areAllNeighborsVisited(sizeX,0));
 
   assert(!areAllNeighborsVisited(0,1));
 }
@@ -407,10 +492,10 @@ static void cellCarvePassage_test() {
   cellCarvePassage(0,0, LEFT);
   assert(!Grid[0][0].left);
 
-  cellCarvePassage(SIZEX,SIZEY, DOWN);
-  assert(!Grid[SIZEX][SIZEY].down);
-  cellCarvePassage(SIZEX,SIZEY, RIGHT);
-  assert(!Grid[SIZEX][SIZEY].right);
+  cellCarvePassage(sizeX,sizeY, DOWN);
+  assert(!Grid[sizeX][sizeY].down);
+  cellCarvePassage(sizeX,sizeY, RIGHT);
+  assert(!Grid[sizeX][sizeY].right);
 }
 
 static void mazeGenerate_test() {
@@ -476,5 +561,5 @@ static void mazeBacktrack_test() { //TODO
 }
 
 static void mazeDraw_test() {
-  mazeDraw(false);
+  mazeDraw();
 }

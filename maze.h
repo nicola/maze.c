@@ -39,7 +39,7 @@ void mazeReset();
 void cellCarvePassage(int, int, int);
   static void cellCarvePassage_test();
 
-void mazeDraw(bool);
-static void mazeDraw_test();
+void mazeDraw();
+  static void mazeDraw_test();
 
 void drawLine(int, int, int, int);
