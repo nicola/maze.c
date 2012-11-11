@@ -35,7 +35,9 @@
 #define PADDINGLEFT 20
 #define DEBUG
 
-struct cell Maze[SIZEX+1][SIZEY+1];
+struct drawing Maze;
+struct drawing Solution;
+struct cell Grid[SIZEX+1][SIZEY+1];
 int currentX, currentY;
 long numin = 1;
 
@@ -62,14 +64,20 @@ int main() {
 
 */
 void mazeInitialize() { //TODO TO BE TESTED
+
+  char * timeStr = timeString();
   int x, y;
+  
+  sprintf(Maze.name, "%s_%ix%i.maze", timeStr, SIZEX, SIZEY);
+  sprintf(Solution.name, "%s_%ix%i.solution", timeStr, SIZEX, SIZEY);
+
   for(x = 0; x <= SIZEX; x++){
     for(y = 0; y <= SIZEY; y++){
       //All maze cells have all walls existing by default, except the perimeter cells.
-      //Maze[x][y].visited   = (x == 0 || x == SIZEX || y == 0 || y == SIZEY) ? 1 : 0;
+      //Grid[x][y].visited   = (x == 0 || x == SIZEX || y == 0 || y == SIZEY) ? 1 : 0;
     }
   }
-  Maze[0][0].visited = 1;
+  Grid[0][0].visited = 1;
   return;
 }
 void mazeGenerate(int *pointerX, int *pointerY) {
@@ -103,7 +111,7 @@ void mazeGrow(int *pointerX, int *pointerY) {
     if (newX < 0 || newY < 0 || newX > SIZEX || newY > SIZEY) continue;
 
     if (!isVisited(newX, newY)) {
-      Maze[newX][newY].visited = true;
+      Grid[newX][newY].visited = true;
       cellCarvePassage(*pointerX, *pointerY, newDirection);
       completed = 1;
     }
@@ -120,8 +128,8 @@ void mazeBacktrack(int *pointerX, int *pointerY) {
   #endif
   while (areAllNeighborsVisited(*pointerX, *pointerY)) {
 
-    prevX = Maze[*pointerX][*pointerY].prevX;
-    prevY = Maze[*pointerX][*pointerY].prevY;
+    prevX = Grid[*pointerX][*pointerY].prevX;
+    prevY = Grid[*pointerX][*pointerY].prevY;
     *pointerX = prevX;
     *pointerY = prevY;
 
@@ -129,7 +137,7 @@ void mazeBacktrack(int *pointerX, int *pointerY) {
     printf(">(%i,%i)", *pointerX, *pointerY);
     #endif
     
-    if (*pointerX == Maze[*pointerX][*pointerY].prevX && *pointerY == Maze[*pointerX][*pointerY].prevY) {
+    if (*pointerX == Grid[*pointerX][*pointerY].prevX && *pointerY == Grid[*pointerX][*pointerY].prevY) {
       #ifdef DEBUG
       printf(" BACK TO THE ORIGINS ");
       #endif
@@ -147,12 +155,13 @@ void mazeSolve(int positionX, int positionY) {
   // maze backtrack with the one with highest depth (hopefully on borders)
 }
 
-void drawLine(FILE * outfile, int x1, int x2, int x3, int x4) {
+void drawLine(bool onlySolution, int x1, int x2, int x3, int x4) {
   x1 += PADDINGTOP;
   x3 += PADDINGTOP;
   x2 += PADDINGLEFT;
   x4 += PADDINGLEFT;
-  fprintf(outfile, "DL %i %i %i %i\n", x1, x2, x3, x4);
+  fprintf(Solution.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
+  if (!onlySolution) fprintf(Maze.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
   #ifdef DEBUG
   #else DEBUG
   printf("DL %i %i %i %i\n", x1, x2, x3, x4);
@@ -160,36 +169,29 @@ void drawLine(FILE * outfile, int x1, int x2, int x3, int x4) {
 }
 
 void mazeDraw(bool solution) {
-  // TODO structure for files and fileNames
+  // TODO MOVE SOMEWHERE ELSE (time)
   int x, y;
-  char fileMazeName[200];
-  char fileSolutionName[200];
-  FILE * fileMaze;
-  FILE * fileSolution;
-  char * timeStr = timeString();
-  
-  sprintf(fileMazeName, "%s_%ix%i.maze", timeStr, SIZEX, SIZEY); // TODO MD5
-  fileMaze = fopen(fileMazeName, "wt");
+
+  Maze.file = fopen(Maze.name, "wt");
+  Solution.file = fopen(Solution.name, "wt");
 
   // Loop and find biggest depth
   for (x = 0; x <= SIZEX; x++){
     for (y = 0; y <= SIZEY; y++){
-      if (!Maze[x][y].up) {
-        drawLine(fileMaze, x*SCALE, y*SCALE, x*(SCALE)+SCALE, y*SCALE);
+      if (!Grid[x][y].up) {
+        drawLine(0, x*SCALE, y*SCALE, x*(SCALE)+SCALE, y*SCALE);
       }
-      if (!Maze[x][y].left) {
-        drawLine(fileMaze, x*SCALE, y*SCALE, x*SCALE, y*(SCALE)+SCALE);
+      if (!Grid[x][y].left) {
+        drawLine(0, x*SCALE, y*SCALE, x*SCALE, y*(SCALE)+SCALE);
       }
     }
   }
-  drawLine(fileMaze, 0, (SIZEY+1)*SCALE, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
-  drawLine(fileMaze, (SIZEX+1)*SCALE, 0, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
-  fclose(fileMaze);
+  drawLine(0, 0, (SIZEY+1)*SCALE, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
+  drawLine(0, (SIZEX+1)*SCALE, 0, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
 
-  sprintf(fileSolutionName, "%s_%ix%i.solution", timeStr, SIZEX, SIZEY); // TODO MD5
-  fileSolution = fopen(fileSolutionName, "wt");
-  // TODO HERE COPY FILE
-  fclose(fileSolution);
+
+  fclose(Maze.file);
+  fclose(Solution.file);
   return;
 }
 
@@ -197,14 +199,14 @@ void mazeReset() {
   int x, y;
   for (x = 0; x <= SIZEX; x++) {
     for (y=0; y <= SIZEY; y++) {
-      Maze[x][y].visited = 0;
-      Maze[x][y].depth = 0;
-      Maze[x][y].up = 0;
-      Maze[x][y].down = 0;
-      Maze[x][y].left = 0;
-      Maze[x][y].right = 0;
-      Maze[x][y].prevX = 0;
-      Maze[x][y].prevY = 0;
+      Grid[x][y].visited = 0;
+      Grid[x][y].depth = 0;
+      Grid[x][y].up = 0;
+      Grid[x][y].down = 0;
+      Grid[x][y].left = 0;
+      Grid[x][y].right = 0;
+      Grid[x][y].prevX = 0;
+      Grid[x][y].prevY = 0;
     }
   }
   currentX = currentY = 0;
@@ -226,34 +228,34 @@ void cellCarvePassage(int prevX, int prevY, int direction) {
   switch (direction) {
     case UP:
       if (y == 0) return;
-      Maze[x][y].up = 1;
-      Maze[x][--y].down = 1;
+      Grid[x][y].up = 1;
+      Grid[x][--y].down = 1;
     break;
     case DOWN:
       if (y == SIZEY) return;
-      Maze[x][y].down = 1;
-      Maze[x][++y].up = 1;
+      Grid[x][y].down = 1;
+      Grid[x][++y].up = 1;
     break;
     case LEFT:
       if (x == 0) return;
-      Maze[x][y].left = 1;
-      Maze[--x][y].right = 1;
+      Grid[x][y].left = 1;
+      Grid[--x][y].right = 1;
     break;
     case RIGHT:
       if (x == SIZEX) return;
-      Maze[x][y].right = 1;
-      Maze[++x][y].left = 1;
+      Grid[x][y].right = 1;
+      Grid[++x][y].left = 1;
     break;
   }
 
 
   // Set origins
-  Maze[x][y].prevX = prevX;
-  Maze[x][y].prevY = prevY;
+  Grid[x][y].prevX = prevX;
+  Grid[x][y].prevY = prevY;
   // Set new depth
-  Maze[x][y].depth = Maze[prevX][prevY].depth + 1;
+  Grid[x][y].depth = Grid[prevX][prevY].depth + 1;
   #ifdef DEBUG
-  printf("I am at (%i, %i) depth: %li  [prev:(%i,%i) depth: %li] \n", x, y, Maze[x][y].depth, prevX, prevY, Maze[prevX][prevY].depth);
+  printf("I am at (%i, %i) depth: %li  [prev:(%i,%i) depth: %li] \n", x, y, Grid[x][y].depth, prevX, prevY, Grid[prevX][prevY].depth);
   #endif
 }
 
@@ -284,7 +286,7 @@ char * timeString() {
 
 bool isVisited(int x, int y) {
   if (x < 0 || y < 0 || x > SIZEX || y > SIZEY) return false;
-  return (Maze[x][y].visited);
+  return (Grid[x][y].visited);
 }
 bool areAllNeighborsVisited(int x, int y) {
 
@@ -313,38 +315,38 @@ static void randomDirection_test() {
   assert(aDirection == UP || aDirection == DOWN || aDirection == LEFT || aDirection == RIGHT);
 }
 static void isVisited_test() {
-  Maze[0][0].visited = false;
+  Grid[0][0].visited = false;
   assert(!isVisited(0, 0));
-  Maze[0][0].visited = true;
+  Grid[0][0].visited = true;
   assert(isVisited(0, 0));
 }
 static void areAllNeighborsVisited_test() {
   mazeReset();
-  Maze[1][0].visited = true;
-  Maze[0][1].visited = true;
-  Maze[2][1].visited = true;
-  Maze[1][2].visited = true;
+  Grid[1][0].visited = true;
+  Grid[0][1].visited = true;
+  Grid[2][1].visited = true;
+  Grid[1][2].visited = true;
   assert(areAllNeighborsVisited(1,1));
 
   // TESTING CORNERS
-  Maze[0][0].visited = true;
-  Maze[1][0].visited = true;
-  Maze[0][1].visited = true;
+  Grid[0][0].visited = true;
+  Grid[1][0].visited = true;
+  Grid[0][1].visited = true;
   assert(areAllNeighborsVisited(0,0));
 
-  Maze[SIZEX][0].visited = true;
-  Maze[SIZEX-1][0].visited = true;
-  Maze[SIZEX][1].visited = true;
+  Grid[SIZEX][0].visited = true;
+  Grid[SIZEX-1][0].visited = true;
+  Grid[SIZEX][1].visited = true;
   assert(areAllNeighborsVisited(SIZEX,0));
 
-  Maze[0][SIZEY].visited = true;
-  Maze[0][SIZEY-1].visited = true;
-  Maze[1][SIZEY].visited = true;
+  Grid[0][SIZEY].visited = true;
+  Grid[0][SIZEY-1].visited = true;
+  Grid[1][SIZEY].visited = true;
   assert(areAllNeighborsVisited(0,SIZEY));
 
-  Maze[SIZEX][SIZEY].visited = true;
-  Maze[SIZEX-1][SIZEY].visited = true;
-  Maze[SIZEX][SIZEY-1].visited = true;
+  Grid[SIZEX][SIZEY].visited = true;
+  Grid[SIZEX-1][SIZEY].visited = true;
+  Grid[SIZEX][SIZEY-1].visited = true;
   assert(areAllNeighborsVisited(SIZEX,0));
 
   assert(!areAllNeighborsVisited(0,1));
@@ -353,20 +355,20 @@ static void areAllNeighborsVisited_test() {
 static void cellCarvePassage_test() {
   mazeReset();
   cellCarvePassage(2,3, UP);
-  assert(Maze[2][3].up == 1);
+  assert(Grid[2][3].up == 1);
 
   mazeReset();
   cellCarvePassage(0,0, UP);
-  assert(!Maze[0][0].up);
+  assert(!Grid[0][0].up);
 
   mazeReset();
   cellCarvePassage(0,0, LEFT);
-  assert(!Maze[0][0].left);
+  assert(!Grid[0][0].left);
 
   cellCarvePassage(SIZEX,SIZEY, DOWN);
-  assert(!Maze[SIZEX][SIZEY].down);
+  assert(!Grid[SIZEX][SIZEY].down);
   cellCarvePassage(SIZEX,SIZEY, RIGHT);
-  assert(!Maze[SIZEX][SIZEY].right);
+  assert(!Grid[SIZEX][SIZEY].right);
 }
 
 static void mazeGenerate_test() {
@@ -380,38 +382,38 @@ static void mazeGrow_test() {
   currentX = 0;
   currentY = 0;
   mazeGrow(&currentX,&currentY);
-  assert(Maze[0][1].visited || Maze[1][0].visited);
+  assert(Grid[0][1].visited || Grid[1][0].visited);
   currentX = 2;
   currentY = 2;
   mazeGrow(&currentX,&currentY);
-  assert(Maze[2][3].visited || Maze[3][2].visited || Maze[2][1].visited || Maze[1][2].visited);
+  assert(Grid[2][3].visited || Grid[3][2].visited || Grid[2][1].visited || Grid[1][2].visited);
 }
 static void mazeBacktrack_test() { //TODO
   mazeReset();
 
 //  mazeBacktrack(0,0);
-//  assert(!Maze[0][0].prevX && !Maze[0][0].prevY);
+//  assert(!Grid[0][0].prevX && !Grid[0][0].prevY);
 
-  Maze[2][1].visited = 1;
-  Maze[2][1].prevX = 1;
-  Maze[2][1].prevY = 1;
+  Grid[2][1].visited = 1;
+  Grid[2][1].prevX = 1;
+  Grid[2][1].prevY = 1;
 
   //Neighborhood
-  Maze[2][0].visited = 1;
-  Maze[1][1].visited = 1;
-  Maze[2][2].visited = 1;
-  Maze[3][1].visited = 1;
-  Maze[0][0].visited = 1;
-  Maze[0][1].visited = 1;
-  Maze[1][2].visited = 1;
+  Grid[2][0].visited = 1;
+  Grid[1][1].visited = 1;
+  Grid[2][2].visited = 1;
+  Grid[3][1].visited = 1;
+  Grid[0][0].visited = 1;
+  Grid[0][1].visited = 1;
+  Grid[1][2].visited = 1;
 
-  Maze[1][1].visited = 1;
-  Maze[1][1].prevX = 1;
-  Maze[1][1].prevY = 0;
+  Grid[1][1].visited = 1;
+  Grid[1][1].prevX = 1;
+  Grid[1][1].prevY = 0;
 
-  Maze[1][0].visited = 1;
-  Maze[1][0].prevX = 0;
-  Maze[1][0].prevY = 0;
+  Grid[1][0].visited = 1;
+  Grid[1][0].prevX = 0;
+  Grid[1][0].prevY = 0;
 
   currentX = 2;
   currentY = 1;

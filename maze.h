@@ -5,6 +5,11 @@ struct cell {
   long depth;
 };
 
+struct drawing {
+  char name[200];
+  FILE * file;
+};
+
 unsigned int opposite();
   static void opposite_test();
 unsigned int randomDirection();
@@ -31,4 +36,4 @@ void cellCarvePassage(int, int, int);
 void mazeDraw(bool);
 static void mazeDraw_test();
 
-void drawLine(FILE*, int, int, int, int);
+void drawLine(bool, int, int, int, int);
