@@ -2,7 +2,7 @@ struct cell {
   bool visited;
   bool up, down, left, right;
   int prevX, prevY;
-  int depth;
+  long depth;
 };
 
 unsigned int opposite();

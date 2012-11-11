@@ -28,13 +28,14 @@
 #define LEFT 1
 #define DOWN 2
 #define RIGHT 3
-#define SIZEX 20
-#define SIZEY 10
+#define SIZEX 6
+#define SIZEY 6
 #define SCALE 20
 #define PADDINGTOP 20
 #define PADDINGLEFT 20
 
 #define OUTFILE "MAZE"
+#define DEBUG
 
 struct cell Maze[SIZEX+1][SIZEY+1];
 int currentX, currentY;
@@ -74,14 +75,10 @@ void mazeInitialize() { //TODO TO BE TESTED
 }
 void mazeGenerate(int *pointerX, int *pointerY) {
   numin = 1;
-  printf("\nTotal sum to reach %i\n", (SIZEX+1)*(SIZEY+1));
 
   do {
-    printf("I am at (%i, %i) ", *pointerX, *pointerY);
     mazeBacktrack(pointerX, pointerY);
-    printf("B(%i, %i) ", *pointerX, *pointerY);
     mazeGrow(pointerX, pointerY);
-    printf("then at (%i, %i)\n", *pointerX, *pointerY);
     numin++;
   } while (numin < (SIZEX+1)*(SIZEY+1)); // TODO check better
 
@@ -93,7 +90,6 @@ void mazeGrow(int *pointerX, int *pointerY) {
 
   do {
     int newDirection = randomDirection();
-    // printf("randomDirection: %i \n", newDirection);
     switch (newDirection) {
       case UP:
         newX = *pointerX;
@@ -112,26 +108,21 @@ void mazeGrow(int *pointerX, int *pointerY) {
         newY = *pointerY;
       break;
     }
-
-    // printf("currentX: %i, currentY %i\n", currentX, currentY);
-    // printf("newX: %i, newY %i\n", newX, newY);
-
     // Error Handler
     if (newX < 0 || newY < 0 || newX > SIZEX || newY > SIZEY) continue;
-    // printf("\nPass -------------------\n\n");
-    // printf("Maze[newX][newY] %d\n", Maze[newX][newY].visited);
 
     if (!isVisited(newX, newY)) {
-      printf(" going %i ", newDirection);
-      // printf("\n Pass isVisited false\n\n");
       cellCarvePassage(*pointerX, *pointerY, newDirection);
       Maze[newX][newY].prevX = *pointerX;
       Maze[newX][newY].prevY = *pointerY;
+      Maze[newX][newY].depth = Maze[*pointerX][*pointerY].depth+1;
 
-      // equivalent currentY++ or currentY-- depending from direction
+      #ifdef DEBUG
+      printf("I am at (%i, %i) depth: %li  [prev:(%i,%i) depth: %li] \n", newX, newY, Maze[newX][newY].depth, *pointerX, *pointerY, Maze[*pointerX][*pointerY].depth);
+      #endif
       *pointerX = newX;
       *pointerY = newY;
-      // printf("newX: %i, newY %i\n", currentX, currentY);
+
       completed = 1;
     }
   } while (!completed);
@@ -139,33 +130,30 @@ void mazeGrow(int *pointerX, int *pointerY) {
 }
 void mazeBacktrack(int *pointerX, int *pointerY) {
   int newX, newY;
-  
-  // printf("\tareAllNeighborsVisited: %d \n\n", areAllNeighborsVisited(*pointerX, *pointerY));
 
+  #ifdef DEBUG
   printf(" [ ");
+  #endif
   while (areAllNeighborsVisited(*pointerX, *pointerY)) {
 
-    // printf("\tcurrentX %i, currentY %i\n", *pointerX, *pointerY);
-    // printf("\tprevX %i, prevY %i\n", Maze[*pointerX][*pointerY].prevX, Maze[*pointerX][*pointerY].prevY);
     newX = Maze[*pointerX][*pointerY].prevX;
     newY = Maze[*pointerX][*pointerY].prevY;
     *pointerX = newX;
     *pointerY = newY;
-    printf("> Backtrack (%i,%i) ", newX, newY);
-
-    // printf("\tNew: currentX %i, currentY %i\n", *pointerX, *pointerY);
-    // printf("\tareAllNeighborsVisited: %d \n\n", areAllNeighborsVisited(*pointerX, *pointerY));
+    #ifdef DEBUG
+    printf(">(%i,%i)", *pointerX, *pointerY);
+    #endif
     
     if (*pointerX == Maze[*pointerX][*pointerY].prevX && *pointerY == Maze[*pointerX][*pointerY].prevY) {
-
-
+      #ifdef DEBUG
       printf("\nBACK TO THE ORIGINS\n");
-      //printf("\n\n Break! \n\n");
-
-      break; // THIS WILL NEVER HAPPEN, WILL IT?
+      #endif
+      break; // TODO: THIS WILL NEVER HAPPEN, WILL IT?
     }
   }
+  #ifdef DEBUG
   printf(" ] ");
+  #endif
 }
 
 void mazeSolve(int positionX, int positionY) {
@@ -180,7 +168,10 @@ void drawLine(FILE * outfile, int x1, int x2, int x3, int x4) {
   x2 += PADDINGLEFT;
   x4 += PADDINGLEFT;
   fprintf(outfile, "DL %i %i %i %i\n", x1, x2, x3, x4);
+  #ifdef DEBUG
+  #else DEBUG
   printf("DL %i %i %i %i\n", x1, x2, x3, x4);
+  #endif
 }
 
 void mazeDraw(bool solution) {
