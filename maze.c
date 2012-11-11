@@ -34,7 +34,7 @@
 #define PADDINGTOP 20
 #define PADDINGLEFT 20
 
-#define OUTFILE "MAZE"
+#define FILEMAZE "MAZE"
 #define DEBUG
 
 struct cell Maze[SIZEX+1][SIZEY+1];
@@ -176,24 +176,25 @@ void drawLine(FILE * outfile, int x1, int x2, int x3, int x4) {
 
 void mazeDraw(bool solution) {
   int x, y;
-  FILE * outfile;
   char filename[200];
-  sprintf(filename, "%s_%ix%i_.maze", OUTFILE, SIZEX, SIZEY); // TODO MD5
-  outfile  =  fopen(filename, "wt");
-  //Actual writing of data begins here:
+  FILE * fileMaze;
+
+  sprintf(filename, "%s_%ix%i_.maze", FILEMAZE, SIZEX, SIZEY); // TODO MD5
+  fileMaze = fopen(filename, "wt");
+
   for (x = 0; x <= SIZEX; x++){
     for (y = 0; y <= SIZEY; y++){
       if (!Maze[x][y].up) {
-        drawLine(outfile, x*SCALE, y*SCALE, x*(SCALE)+SCALE, y*SCALE);
+        drawLine(fileMaze, x*SCALE, y*SCALE, x*(SCALE)+SCALE, y*SCALE);
       }
       if (!Maze[x][y].left) {
-        drawLine(outfile, x*SCALE, y*SCALE, x*SCALE, y*(SCALE)+SCALE);
+        drawLine(fileMaze, x*SCALE, y*SCALE, x*SCALE, y*(SCALE)+SCALE);
       }
     }
   }
-  drawLine(outfile, 0, (SIZEY+1)*SCALE, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
-  drawLine(outfile, (SIZEX+1)*SCALE, 0, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
-  fclose(outfile);
+  drawLine(fileMaze, 0, (SIZEY+1)*SCALE, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
+  drawLine(fileMaze, (SIZEX+1)*SCALE, 0, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
+  fclose(fileMaze);
   return;
 }
 
