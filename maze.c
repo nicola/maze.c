@@ -78,6 +78,7 @@ void mazeGenerate(int *pointerX, int *pointerY) {
   do {
     mazeBacktrack(pointerX, pointerY);
     mazeGrow(pointerX, pointerY);
+
     numin++;
   } while (numin < (SIZEX+1)*(SIZEY+1)); // TODO check better
 
@@ -86,9 +87,10 @@ void mazeGenerate(int *pointerX, int *pointerY) {
 void mazeGrow(int *pointerX, int *pointerY) {
   int completed = 0;
   int newX, newY;
+  int newDirection;
 
   do {
-    int newDirection = randomDirection();
+    newDirection = randomDirection();
     switch (newDirection) {
       case UP:
         newX = *pointerX;
@@ -111,21 +113,15 @@ void mazeGrow(int *pointerX, int *pointerY) {
     if (newX < 0 || newY < 0 || newX > SIZEX || newY > SIZEY) continue;
 
     if (!isVisited(newX, newY)) {
-      cellCarvePassage(*pointerX, *pointerY, newDirection);
-      Maze[newX][newY].prevX = *pointerX;
-      Maze[newX][newY].prevY = *pointerY;
-      Maze[newX][newY].depth = Maze[*pointerX][*pointerY].depth+1;
-
-      #ifdef DEBUG
-      printf("I am at (%i, %i) depth: %li  [prev:(%i,%i) depth: %li] \n", newX, newY, Maze[newX][newY].depth, *pointerX, *pointerY, Maze[*pointerX][*pointerY].depth);
-      #endif
-      *pointerX = newX;
-      *pointerY = newY;
-
+      Maze[newX][newY].visited = true;
       completed = 1;
     }
   } while (!completed);
-  Maze[*pointerX][*pointerY].visited = true;
+
+  cellCarvePassage(*pointerX, *pointerY, newDirection);
+
+  *pointerX = newX;
+  *pointerY = newY;
 }
 void mazeBacktrack(int *pointerX, int *pointerY) {
   int newX, newY;
@@ -145,7 +141,7 @@ void mazeBacktrack(int *pointerX, int *pointerY) {
     
     if (*pointerX == Maze[*pointerX][*pointerY].prevX && *pointerY == Maze[*pointerX][*pointerY].prevY) {
       #ifdef DEBUG
-      printf("\nBACK TO THE ORIGINS\n");
+      printf(" BACK TO THE ORIGINS ");
       #endif
       break; // TODO: THIS WILL NEVER HAPPEN, WILL IT?
     }
@@ -191,6 +187,7 @@ void mazeDraw(bool solution) {
   sprintf(fileMazeName, "%s_%ix%i.maze", timeStr, SIZEX, SIZEY); // TODO MD5
   fileMaze = fopen(fileMazeName, "wt");
 
+  // Loop and find biggest depth
   for (x = 0; x <= SIZEX; x++){
     for (y = 0; y <= SIZEY; y++){
       if (!Maze[x][y].up) {
@@ -217,6 +214,7 @@ void mazeReset() {
   for (x = 0; x <= SIZEX; x++) {
     for (y=0; y <= SIZEY; y++) {
       Maze[x][y].visited = 0;
+      Maze[x][y].depth = 0;
       Maze[x][y].up = 0;
       Maze[x][y].down = 0;
       Maze[x][y].left = 0;
@@ -236,29 +234,43 @@ void mazeReset() {
 
 */
 
-void cellCarvePassage(int x, int y, int direction) {
+void cellCarvePassage(int prevX, int prevY, int direction) {
+  int x = prevX;
+  int y = prevY;
+
+
   switch (direction) {
     case UP:
       if (y == 0) return;
       Maze[x][y].up = 1;
-      Maze[x][y-1].down = 1;
+      Maze[x][--y].down = 1;
     break;
     case DOWN:
       if (y == SIZEY) return;
       Maze[x][y].down = 1;
-      Maze[x][y+1].up = 1;
+      Maze[x][++y].up = 1;
     break;
     case LEFT:
       if (x == 0) return;
       Maze[x][y].left = 1;
-      Maze[x-1][y].right = 1;
+      Maze[--x][y].right = 1;
     break;
     case RIGHT:
       if (x == SIZEX) return;
       Maze[x][y].right = 1;
-      Maze[x+1][y].left = 1;
+      Maze[++x][y].left = 1;
     break;
   }
+
+
+  // Set origins
+  Maze[x][y].prevX = prevX;
+  Maze[x][y].prevY = prevY;
+  // Set new depth
+  Maze[x][y].depth = Maze[prevX][prevY].depth + 1;
+  #ifdef DEBUG
+  printf("I am at (%i, %i) depth: %li  [prev:(%i,%i) depth: %li] \n", x, y, Maze[x][y].depth, prevX, prevY, Maze[prevX][prevY].depth);
+  #endif
 }
 
 /*
@@ -274,6 +286,7 @@ unsigned int randomDirection() {
   return rand() % 4;
 }
 bool isVisited(int x, int y) {
+  if (x < 0 || y < 0 || x > SIZEX || y > SIZEY) return false;
   return (Maze[x][y].visited);
 }
 bool areAllNeighborsVisited(int x, int y) {
