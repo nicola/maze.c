@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
-#include <signal.h>
+#include <time.h>
 
 /*
   +--------------+--------------+--------------+
@@ -33,8 +33,6 @@
 #define SCALE 20
 #define PADDINGTOP 20
 #define PADDINGLEFT 20
-
-#define FILEMAZE "MAZE"
 #define DEBUG
 
 struct cell Maze[SIZEX+1][SIZEY+1];
@@ -42,6 +40,7 @@ int currentX, currentY;
 long numin = 1;
 
 int main() {
+  
   srand((unsigned int)time(NULL));
   mazeInitialize();
   // Test
@@ -175,12 +174,22 @@ void drawLine(FILE * outfile, int x1, int x2, int x3, int x4) {
 }
 
 void mazeDraw(bool solution) {
+  // TODO structure for files and fileNames
   int x, y;
-  char filename[200];
+  char fileMazeName[200];
+  char fileSolutionName[200];
   FILE * fileMaze;
+  FILE * fileSolution;
+  time_t timer; //TODO function
+  struct tm* timeInfo;
+  char timeStr[16];
 
-  sprintf(filename, "%s_%ix%i_.maze", FILEMAZE, SIZEX, SIZEY); // TODO MD5
-  fileMaze = fopen(filename, "wt");
+  time(&timer);
+  timeInfo = localtime(&timer);
+  strftime(timeStr, 16, "%Y%d%m%H%M%S", timeInfo);
+  
+  sprintf(fileMazeName, "%s_%ix%i.maze", timeStr, SIZEX, SIZEY); // TODO MD5
+  fileMaze = fopen(fileMazeName, "wt");
 
   for (x = 0; x <= SIZEX; x++){
     for (y = 0; y <= SIZEY; y++){
@@ -195,6 +204,11 @@ void mazeDraw(bool solution) {
   drawLine(fileMaze, 0, (SIZEY+1)*SCALE, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
   drawLine(fileMaze, (SIZEX+1)*SCALE, 0, (SIZEX+1)*SCALE, (SIZEY+1)*SCALE);
   fclose(fileMaze);
+
+  sprintf(fileSolutionName, "%s_%ix%i.solution", timeStr, SIZEX, SIZEY); // TODO MD5
+  fileSolution = fopen(fileSolutionName, "wt");
+  // TODO HERE COPY FILE
+  fclose(fileSolution);
   return;
 }
 
