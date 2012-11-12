@@ -38,8 +38,8 @@ int SCALE;
 #define PADDINGLEFT 10
 
 // Game Settings
-int SIZEX = 20;
-int SIZEY = 10;
+int SIZEX;
+int SIZEY;
 int LEVEL = 5;
 int GAME = 1;
 
@@ -95,6 +95,14 @@ int main(int argc, char *argv[]) {
     --argc;
   }
 
+  if (SIZEX == 0) {
+    SIZEX = (SIZEY > 0) ? SIZEY : 20;
+  }
+
+  if (SIZEY == 0) {
+    SIZEY = SIZEX;
+  }
+
   // Validation of command inputs
   if (SIZEX < 4 || SIZEX > 250) {
     printf("\nmaze: *** -x%i not in range [4-250].  Stop.\n", SIZEX);
@@ -122,9 +130,16 @@ int main(int argc, char *argv[]) {
     exit(8);
   }
 
-  if (SIZEY > ((SIZEX)*3)/2) {
-    printf("maze: ** Warning: for better resolution, make -x equal or bigger than -y");
+  // if (SIZEY > ((SIZEX)*5)/3) {
+  //   printf("maze: ** Warning: for better resolution, make -x equal or bigger than -y");
+  // }
+
+  
+  if (SIZEY > SIZEX) {
+    printf("maze: *** -x must be bigger or equal -y.  Stop\n");
+    exit(8);
   }
+  
 
 
   printf("\nYour settings\n");
@@ -587,3 +602,16 @@ static void mazeBacktrack_test() { //TODO
 static void mazeDraw_test() {
   mazeDraw();
 }
+
+
+/* TODO MISSING
+PADDING
+
+DIFFERENT LEVELS
+DIFFERENT GAMES
+GUI?
+BASH SCRIPT?
+
+PRINT BMP?
+PRIM's ?
+*/
