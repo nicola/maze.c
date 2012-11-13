@@ -34,12 +34,12 @@
 
 // Window Settings
 int SCALE;
-#define PADDINGTOP 20
-#define PADDINGLEFT 10
 
 // Game Settings
 int SIZEX;
 int SIZEY;
+int PADDINGTOP;
+int PADDINGLEFT;
 int LEVEL = 5;
 int GAME = 1;
 
@@ -62,12 +62,22 @@ void usage(void)
   exit (8);
 }
 
-void prepareForDrawing() {
-  int scaleX = WINDOWX / (SIZEX+1 + 2*((PADDINGLEFT*(SIZEX+1))/100));
-  int scaleY = WINDOWY / (SIZEY+1 + 2*((PADDINGTOP*(SIZEY+1))/100));
 
+/*
+  Compare the scale of x and y (window size) / (size of maze + margin)
+  Choose the smallest scale, to make it look nicer.
+  Set the padding for x and y
+*/
+void prepareForDrawing() {
+  int scaleX = WINDOWX / (SIZEX+1 +2);
+  int scaleY = WINDOWY / (SIZEY+1 +2);
   SCALE = (scaleX <= scaleY) ? scaleX : scaleY;
+
+  PADDINGTOP = (WINDOWY - SCALE*(SIZEY+1))/2;
+  PADDINGLEFT = (WINDOWX - SCALE*(SIZEX+1))/2;
   printf("SCALE: %i\n", SCALE);
+  printf("PADDINGTOP: %i\n", PADDINGTOP);
+  printf("PADDINGLEFT: %i\n", PADDINGLEFT);
 }
 
 int main(int argc, char *argv[]) {
@@ -289,10 +299,11 @@ void drawLine(int x1, int x2, int x3, int x4) {
   // x3 = (SCALE * PADDINGLEFT)/10;
   // x2 = (SCALE * PADDINGTOP)/10;
   // x4 = (SCALE * PADDINGTOP)/10;
-  x1 *= SCALE;
-  x2 *= SCALE;
-  x3 *= SCALE;
-  x4 *= SCALE;
+  x1 = x1*SCALE + PADDINGLEFT;
+  x2 = x2*SCALE + PADDINGTOP;
+  x3 = x3*SCALE + PADDINGLEFT;
+  x4 = x4*SCALE + PADDINGTOP;
+
   fprintf(Maze.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
   fprintf(Solution.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
   #ifdef DEBUG
@@ -302,8 +313,8 @@ void drawLine(int x1, int x2, int x3, int x4) {
 
 void fillRect(int x1, int x2, int x3, int x4)
 {
-  x1 *= SCALE;
-  x2 *= SCALE;
+  x1 = x1*SCALE + PADDINGLEFT;
+  x2 = x2*SCALE + PADDINGTOP;
   x3 *= SCALE;
   x4 *= SCALE;
   fprintf(Solution.file, "FR %i %i %i %i\n", x1, x2, x3, x4);
