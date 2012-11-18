@@ -1,16 +1,17 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Common
+// Command line and extra
 
 // Common - functions
+void evaluateCommandLine(int, char *arg[]);
 char * timeString();
-void usage(void);
+void usage();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Drawing
 
 // Drawing - definitions
 struct drawing {
-  char name[200];
+  char name[35];
   FILE * file;
 };
 enum colour {black,blue,cyan,darkgray,gray,green,lightgray,magenta,orange,pink,red,white,yellow};

@@ -55,12 +55,43 @@ int SIZEX;
 int SIZEY;
 int LEVEL = 5;
 int GAME = MOUSE_GAME;
+bool SILENTMODE; // if true, it doesnt launch drawapp automagically
+
 
 // Settings - Maze
 int currentX, currentY;
 struct cell Grid[250][250];
 struct coords initialPoint;
 struct coords finalPoint;
+
+
+int main(int argc, char *argv[]) {
+
+  // Set randomness
+  srand((unsigned int)time(NULL));
+
+  // Taking commands
+  evaluateCommandLine(argc, argv);
+
+  // Starting generating maze
+  mazeInitialize();
+  mazeGenerate(&currentX, &currentY);
+
+  // Draw the maze
+  prepareForDrawing();
+  mazeDraw();
+
+  if (!SILENTMODE) {
+    char command[60];
+    sprintf(command, "cat %s | java -jar drawapp.jar", Maze.name);
+    system(command);
+  }
+
+  return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//   Command line and extras
 
 /*
  *  evaluateCommandLine(int, char*)
@@ -79,6 +110,7 @@ void evaluateCommandLine(int argc, char *argv[]) {
        case 'l': LEVEL = atoi(&argv[1][2]); break;
        case 'g': GAME = atoi(&argv[1][2]); break;
        case 'h': usage(); break;
+       case 's': SILENTMODE = true; break;
        default:
        printf("\nmaze: *** Command: %s not found.  Stop.\n", argv[1]);
        printf("maze: *** Exiting from the maze, you are at safe\n\n", argv[1]);
@@ -87,14 +119,6 @@ void evaluateCommandLine(int argc, char *argv[]) {
      ++argv;
      --argc;
    }
-}
-
-int main(int argc, char *argv[]) {
-
-  // Set randomness
-  srand((unsigned int)time(NULL));
-
-  evaluateCommandLine(argc, argv);
 
   // Set given or default options for -x and -y
   if (SIZEX == 0) {
@@ -138,24 +162,12 @@ int main(int argc, char *argv[]) {
     exit(8);
   }  
 
-
   printf("\nYour settings\n");
   printf("Horizontal cells: %i\n", SIZEX);
   printf("Vertical cells: %i\n", SIZEY);
   printf("Difficulty: %i\n", LEVEL);
   printf("Game: %i\n", GAME);
-
-  mazeInitialize();
-  mazeGenerate(&currentX, &currentY);
-
-  prepareForDrawing();
-  mazeDraw();
-
-  return 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-//   Cell
 
 /*
  *  timeString()
@@ -175,18 +187,19 @@ char * timeString() {
   return ptrTimeStr;
 }
 /*
- *  fillCell(bool, int, int, int, int)
- *  ----------------------------------
- *  Fill a cell with a plain colour
+ *  usage()
+ *  -------
+ *  Returns how to use the command line and exit
  */
-void usage(void) {
+void usage() {
+  printf("./maze [-x<int>] [-y<int>] [-l<int>] [-g<int>] \n\n");
   printf("Usage:\n");
   printf("  -x<int>        Horizontal cells (default: 20)\n");
   printf("  -y<int>        Vertical cells (default: 10)\n");
   printf("  -l<int>        Level from 1 to 10 (default: 10)\n");
   printf("  -g<int>        Game: 1 for Mouse&cheese, 2 for Escape (default: 1)\n");
-  printf("  -s             Silent mode, make me shut up\n");
-  exit (8);
+  printf("  -s             Silently create maze files without starting drawapp\n");
+  exit(8);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
