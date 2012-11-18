@@ -1,45 +1,72 @@
+///////////////////////////////////////////////////////////////////////////////
+// Common
+
+// Common - functions
+char * timeString();
+void usage(void);
+
+///////////////////////////////////////////////////////////////////////////////
+// Drawing
+
+// Drawing - definitions
+struct drawing {
+  char name[200];
+  FILE * file;
+};
+enum colour {black,blue,cyan,darkgray,gray,green,lightgray,magenta,orange,pink,red,white,yellow};
+typedef enum colour colour;
+
+// Drawing - functions
+void drawLine(int, int, int, int);
+void fillCell(bool, int, int, int, int);
+void prepareForDrawing();
+void setColour(FILE*, colour);
+
+///////////////////////////////////////////////////////////////////////////////
+// Maze
+
+// Maze - functions
+void mazeBacktrack(int*, int*);
+void mazeDraw();
+void mazeGenerate();
+void mazeGrow(int*, int *);
+void mazeInitialize();
+void mazeReset();
+void mazeSetLongestPath(int, int);
+
+
+// Maze - tests
+static void mazeBacktrack_test();
+static void mazeDraw_test();
+static void mazeGenerate_test();
+static void mazeGrow_test();
+
+///////////////////////////////////////////////////////////////////////////////
+// Cells
+
+// Cells - definitions
 struct cell {
   bool visited;
   bool up, down, left, right;
   int prevX, prevY;
   int depth;
 };
-
 struct coords {
   int x;
   int y;
   int * depth;
 };
 
-struct drawing {
-  char name[200];
-  FILE * file;
-};
-
-unsigned int opposite();
-  static void opposite_test();
-unsigned int randomDirection();
-  static void randomDirection_test();
-char * timeString();
-
-bool isVisited(int, int);
-  static void isVisited_test();
-bool areAllNeighborsVisited(int, int);
-  static void areAllNeighborsVisited_test();
-
-void mazeBacktrack(int*, int*);
-  static void mazeBacktrack_test();
-void mazeGenerate();
-  static void mazeGenerate_test();
-void mazeGrow(int*, int *);
-  static void mazeGrow_test();
-void mazeInitialize();
-void mazeReset();
-
+// Cells - functions
+bool areNeighborsVisited(int, int);
 void cellCarvePassage(int, int, int);
-  static void cellCarvePassage_test();
+bool isVisited(int, int);
+unsigned int randomDirection();
 
-void mazeDraw();
-  static void mazeDraw_test();
+// Cells - tests
+static void areNeighborsVisited_test();
+static void cellCarvePassage_test();
+static void isVisited_test();
+static void randomDirection_test();
 
-void drawLine(int, int, int, int);
+// THE VERY END :)
