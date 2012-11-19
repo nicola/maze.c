@@ -6,6 +6,17 @@
 #include <time.h>
 
 /*
+  
+  # Install
+      make
+
+  # Use it
+      ./maze -h
+
+  # Grid
+  
+  My grid is a matrix that respect as follows:
+  
   +--------------+--------------+--------------+
   |              |              |              |
   |   x-1, y-1   |     x, y-1   |   x+1, y-1   |
@@ -55,14 +66,15 @@ struct colourscheme Scheme; // current-colour-Scheme
 // Settings - Game
 int SIZEX;
 int SIZEY;
-int LEVEL = 5;
+int LEVEL;
 int GAME = MOUSE_GAME;
 bool SILENTMODE; // if true, it doesnt launch drawapp automagically
+bool DELETEFILES; // if true, it deletes all your *.solution *.maze
 
 
 // Settings - Maze
 int currentX, currentY;
-struct cell Grid[250][250];
+struct cell Grid[250][150];
 struct coords initialPoint;
 struct coords finalPoint;
 
@@ -119,6 +131,7 @@ void evaluateCommandLine(int argc, char *argv[]) {
       case 'c': saveIfNumeric(&COLOURSCHEME, &argv[1][2]); break;
       case 'h': usage(); break;
       case 's': SILENTMODE = true; break;
+      case 'd': DELETEFILES = true; break;
       default:
       printf("\nmaze: *** Command: %s not found.  Stop.\n", argv[1]);
       printf("maze: *** Exiting from the maze, you are at safe\n\n", argv[1]);
@@ -128,26 +141,44 @@ void evaluateCommandLine(int argc, char *argv[]) {
     --argc;
   }
 
+  // This delete all the previous files
+  if (DELETEFILES) {
+    system("rm -rf *.maze *.solution");
+    exit(8);
+  }
+
+
+  
+  if (LEVEL > 0 && LEVEL < 6) {
+    if (SIZEX == 0 && SIZEY == 0) {
+      loadLevelSize();
+    } else {
+      printf("\nmaze: ** You cannot use -l with -x or -y, this is exclusive.  Warning.\n");
+      printf("maze: ** Level -l will be ignored.  Continue.\n");
+    }
+  }
+
   // Set given or default options for -x and -y
   if (SIZEX == 0) {
-    SIZEX = (SIZEY > 0) ? SIZEY : 20;
+    SIZEX = (SIZEY > 0) ? SIZEY : 10;
   }
 
   if (SIZEY == 0) {
     SIZEY = SIZEX;
+    if (SIZEY > 149) SIZEY = 149;
   }
 
   // Validation of command inputs -x,-y,-l,-g
-  if (SIZEX < 4 || SIZEX > 250) {
-    printf("\nmaze: *** -x%i not in range [4-250].  Stop.\n", SIZEX);
+  if (SIZEX < 4 || SIZEX > 249) {
+    printf("\nmaze: *** -x%i not in range [4-249].  Stop.\n", SIZEX);
     printf("\nUsage:\n");
-    printf("  -x<int>        Horizontal cells [4-250] (default: 20)\n");
+    printf("  -x<int>        Horizontal cells [4-249] (default: 10)\n");
     exit(8);
   }
-  if (SIZEY < 4 || SIZEX > 250) {
-    printf("\nmaze: *** -y%i not in range [4-250].  Stop.\n", SIZEY);
+  if (SIZEY < 4 || SIZEY > 149) {
+    printf("\nmaze: *** -y%i not in range [4-149].  Stop.\n", SIZEY);
     printf("\nUsage:\n");
-    printf("  -y<int>        Vertical cells [4-250] (default: 20)\n");
+    printf("  -y<int>        Vertical cells [4-149] (default: 10)\n");
     exit(8);
   }
 
@@ -156,10 +187,10 @@ void evaluateCommandLine(int argc, char *argv[]) {
     exit(8);
   }
 
-  if (LEVEL < 1 || LEVEL > 10) {
-    printf("\nmaze: *** -l%i not in range [1-10].  Stop.\n", LEVEL);
+  if (LEVEL < 0 || LEVEL > 5) {
+    printf("\nmaze: *** -l%i not in range [1-5].  Stop.\n", LEVEL);
     printf("\nUsage:\n");
-    printf("  -l<int>        Level from 1 to 10 (default: 10)\n");
+    printf("  -l<int>        Level from 1 to 5 (default: 2)\n");
     exit(8);
   }
 
@@ -180,7 +211,6 @@ void evaluateCommandLine(int argc, char *argv[]) {
   printf("\nYour settings\n");
   printf("Horizontal cells: %i\n", SIZEX);
   printf("Vertical cells: %i\n", SIZEY);
-  printf("Difficulty: %i\n", LEVEL);
   printf("Game: %i\n", GAME);
 }
 
@@ -238,12 +268,13 @@ char * timeString() {
 void usage() {
   printf("./maze [-x<int>] [-y<int>] [-l<int>] [-g<int>] \n\n");
   printf("Usage:\n");
-  printf("  -x<int>        Horizontal cells (default: 20)\n");
+  printf("  -x<int>        Horizontal cells (default: 10)\n");
   printf("  -y<int>        Vertical cells (default: 10)\n");
-  printf("  -l<int>        Level from 1 to 10 (default: 10)\n");
+  printf("  -l<int>        Level from 1 to 5 (default: 2)\n");
   printf("  -g<int>        Game: 1 for Mouse&cheese, 2 for Escape (default: 1)\n");
   printf("  -c<int>        Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for Chess\n");
   printf("  -s             Silently create maze files without starting drawapp\n");
+  printf("  -d             Delete all the previous *.maze and *.solution\n");
   exit(8);
 }
 
@@ -433,15 +464,49 @@ void loadColourScheme() {
 }
 
 /*
+ *  loadLevelSize()
+ *  ------------------
+ *  Load level (pre-fixed sizes of the maze)
+ */
+void loadLevelSize() {
+  switch(LEVEL) {
+    // Default
+    case 1:
+    SIZEX = 5;
+    SIZEY = 5;
+    break;
+    case 2:
+    SIZEX = 10;
+    SIZEY = 10;
+    break;
+    case 3:
+    SIZEX = 30;
+    SIZEY = 15;
+    break;
+    case 4:
+    SIZEX = 40;
+    SIZEY = 40;
+    break;
+    case 5:
+    SIZEX = 100;
+    SIZEY = 80;
+    break;
+  }
+}
+
+/*
  *  prepareForDrawing()
  *  -------------------
  *  Compare the scale of x and y (window size) / (size of maze + margin)
  *  Choose the smallest scale, to make it look nicer and set the padding for x and y 
  */
 void prepareForDrawing() {
-  int scaleX = WINDOWX / (SIZEX+1 +2); //TODO error here
+  int scaleX = WINDOWX / (SIZEX+1 +2); // +2 is the top/left padding
   int scaleY = WINDOWY / (SIZEY+1 +2);
   SCALE = (scaleX <= scaleY) ? scaleX : scaleY;
+  
+  // When scale is too small, it's because of integer calculations
+  if (SCALE == 1) SCALE = 2;
 
   PADDINGTOP = (WINDOWY - SCALE*(SIZEY+1))/2;
   PADDINGLEFT = (WINDOWX - SCALE*(SIZEX+1))/2;
@@ -449,7 +514,7 @@ void prepareForDrawing() {
   // Level here
   // int depthLevel = (finalPoint.depth / 10)*LEVEL;
 
-  printf("SCALE: %i\n", SCALE);
+  printf("SCALE: %i from scaleX:%i, scaleY:%i\n", SCALE, scaleX, scaleY);
   printf("PADDINGTOP: %i\n", PADDINGTOP);
   printf("PADDINGLEFT: %i\n", PADDINGLEFT);
 }
@@ -897,10 +962,6 @@ static void mazeDraw_test() {
 
 
 /* TODO MISSING
-
-DIFFERENT LEVELS
-
-RESET A MAXIMUM
 
 TORRETTA
 

@@ -51,6 +51,7 @@ void drawMarkers(struct coords *, struct coords *);
 void drawSolution(struct coords *, struct coords *);
 void fillCell(bool, int, int);
 void loadColourScheme();
+void loadLevelSize();
 void prepareForDrawing();
 void setColour(FILE*, colour);
 
