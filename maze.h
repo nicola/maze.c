@@ -1,4 +1,29 @@
 ///////////////////////////////////////////////////////////////////////////////
+// Definitions
+
+// Definitions - drawings
+struct drawing {
+  char name[35];
+  FILE * file;
+};
+enum colour {black,blue,cyan,darkgray,gray,green,lightgray,magenta,orange,pink,red,white,yellow};
+typedef enum colour colour;
+
+// Definitions - cells
+struct cell {
+  bool visited;
+  bool up, down, left, right;
+  int prevX, prevY;
+  int depth;
+};
+struct coords {
+  int x;
+  int y;
+  int * depth;
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
 // Command line and extra
 
 // Common - functions
@@ -11,17 +36,11 @@ void usage();
 ///////////////////////////////////////////////////////////////////////////////
 // Drawing
 
-// Drawing - definitions
-struct drawing {
-  char name[35];
-  FILE * file;
-};
-enum colour {black,blue,cyan,darkgray,gray,green,lightgray,magenta,orange,pink,red,white,yellow};
-typedef enum colour colour;
-
 // Drawing - functions
 void drawLine(int, int, int, int);
-void fillCell(bool, int, int, int, int);
+void drawMarkers(struct coords *, struct coords *);
+void drawSolution(struct coords *, struct coords *);
+void fillCell(bool, int, int);
 void prepareForDrawing();
 void setColour(FILE*, colour);
 
@@ -46,19 +65,6 @@ static void mazeGrow_test();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Cells
-
-// Cells - definitions
-struct cell {
-  bool visited;
-  bool up, down, left, right;
-  int prevX, prevY;
-  int depth;
-};
-struct coords {
-  int x;
-  int y;
-  int * depth;
-};
 
 // Cells - functions
 bool areNeighborsVisited(int, int);

@@ -1,5 +1,5 @@
-gcc graphics.c maze.c main.c
+gcc maze.c
 rm *.so* *.ma*
-./a.out -x20 -y10 -g1
+./a.out -x20 -y10 -g1 -s
 cat *.sol* | java -jar drawapp.jar
 cat *.maz* | java -jar drawapp.jar

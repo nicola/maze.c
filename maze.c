@@ -32,15 +32,15 @@
 #define WINDOWY 300
 
 /*
- * MOUSE_GAME
- * A mouse goes to the cheese (longest path in the maze)
+ *  MOUSE_GAME
+ *  A mouse goes to the cheese (longest path in the maze)
  *
- * ESCAPE_GAME
- * A person escape from one door to another (longest path until a wall in the maze)
+ *  ESCAPE_GAME
+ *  A person escape from one door to another (longest path until a wall in the maze)
  */
-
 #define MOUSE_GAME 1
 #define ESCAPE_GAME 2
+
 // #define DEBUG
 
 // Settings - Drawing
@@ -85,6 +85,9 @@ int main(int argc, char *argv[]) {
     char command[60];
     sprintf(command, "cat %s | java -jar drawapp.jar", Maze.name);
     system(command);
+
+    sprintf(command, "cat %s | java -jar drawapp.jar", Solution.name);
+    system(command);
   }
 
   return 0;
@@ -101,25 +104,25 @@ int main(int argc, char *argv[]) {
 
 void evaluateCommandLine(int argc, char *argv[]) {
   // If no input, suggest to ask for help
-   if (!argv[1]) printf("Type \"-h\" for information on available commands.\n");
+  if (!argv[1]) printf("Type \"-h\" for information on available commands.\n");
 
    // Looping for command line inputs
-   while ((argc > 1) && (argv[1][0] == '-')) {
-     switch (argv[1][1]) {
-       case 'x': saveIfNumeric(&SIZEX, &argv[1][2]); break;
-       case 'y': saveIfNumeric(&SIZEY, &argv[1][2]); break;
-       case 'l': saveIfNumeric(&LEVEL, &argv[1][2]); break;
-       case 'g': saveIfNumeric(&GAME, &argv[1][2]); break;
-       case 'h': usage(); break;
-       case 's': SILENTMODE = true; break;
-       default:
-       printf("\nmaze: *** Command: %s not found.  Stop.\n", argv[1]);
-       printf("maze: *** Exiting from the maze, you are at safe\n\n", argv[1]);
-       usage();
-     }
-     ++argv;
-     --argc;
-   }
+  while ((argc > 1) && (argv[1][0] == '-')) {
+    switch (argv[1][1]) {
+      case 'x': saveIfNumeric(&SIZEX, &argv[1][2]); break;
+      case 'y': saveIfNumeric(&SIZEY, &argv[1][2]); break;
+      case 'l': saveIfNumeric(&LEVEL, &argv[1][2]); break;
+      case 'g': saveIfNumeric(&GAME, &argv[1][2]); break;
+      case 'h': usage(); break;
+      case 's': SILENTMODE = true; break;
+      default:
+      printf("\nmaze: *** Command: %s not found.  Stop.\n", argv[1]);
+      printf("maze: *** Exiting from the maze, you are at safe\n\n", argv[1]);
+      usage();
+    }
+    ++argv;
+    --argc;
+  }
 
   // Set given or default options for -x and -y
   if (SIZEX == 0) {
@@ -170,6 +173,11 @@ void evaluateCommandLine(int argc, char *argv[]) {
   printf("Game: %i\n", GAME);
 }
 
+/*
+ *  isNumeric(int*)
+ *  ---------------
+ *  Check if a char represents a number
+ */
 bool isNumeric (char *ptrChar) {
   if (*ptrChar) {
     char character;
@@ -249,17 +257,58 @@ void drawLine(int x1, int x2, int x3, int x4) {
 }
 
 /*
- *  fillCell(bool, int, int, int, int)
+ *  drawMarkers(struct coords, struct coords)
+ *  -----------------------------------------
+ *  Put a colored square (marker) at the initial and final point
+ */
+void drawMarkers(struct coords * ptrInitial, struct coords * ptrFinal) {
+  // Draw initial point
+  // Although this will never happen, this may be extended in future
+  if (ptrInitial->x != 0 && ptrInitial->y != 0) {
+    setColour(Solution.file, blue);
+    fillCell(GAME==ESCAPE_GAME, ptrInitial->x, ptrInitial->y);
+  }
+
+  // Draw final point
+  setColour(Solution.file, red);
+  setColour(Maze.file, magenta);
+  // GAME == 2 means that it will fill the finalPoint when playing ESCAPE_GAME
+  if (GAME != ESCAPE_GAME) fillCell(1, ptrFinal->x, ptrFinal->y);
+}
+
+
+/*
+ *  drawSolution(coords*, coords*)
+ *  ------------------------------
+ *  Starts from fromCoords and draw a solution to toCoords, backtracking
+ *  First solution is written, then 
+ */
+void drawSolution(struct coords * toCoords, struct coords * fromCoords) {
+  int tempX = fromCoords->x, tempY = fromCoords->y;
+  setColour(Solution.file,green);
+
+  // Start filling from last cell
+  do {
+    fillCell(1, tempX, tempY);
+    int tempX2 = Grid[tempX][tempY].prevX;
+    tempY = Grid[tempX][tempY].prevY;
+    tempX = tempX2;
+  } while (!(toCoords->x == tempX && toCoords->y == tempY));
+  
+  // Finally fill initial cell
+  fillCell(1, toCoords->x, toCoords->y);
+}
+
+/*
+ *  fillCell(bool, int, int)
  *  ----------------------------------
  *  Fill a cell with a plain colour
  */
-void fillCell(bool onlySolution, int x, int y, int width, int height) {
+void fillCell(bool onlySolution, int x, int y) {
   x = x*SCALE + PADDINGLEFT;
   y = y*SCALE + PADDINGTOP;
-  width *= SCALE;
-  height *= SCALE;
-  fprintf(Solution.file, "FR %i %i %i %i\n", x, y, width, height);
-  if (!onlySolution) fprintf(Maze.file, "FR %i %i %i %i\n", x, y, width, height);
+  fprintf(Solution.file, "FR %i %i %i %i\n", x, y, SCALE, SCALE);
+  if (!onlySolution) fprintf(Maze.file, "FR %i %i %i %i\n", x, y, SCALE, SCALE);
 }
 
 /*
@@ -269,7 +318,7 @@ void fillCell(bool onlySolution, int x, int y, int width, int height) {
  *  Choose the smallest scale, to make it look nicer and set the padding for x and y 
  */
 void prepareForDrawing() {
-  int scaleX = WINDOWX / (SIZEX+1 +2);
+  int scaleX = WINDOWX / (SIZEX+1 +2); //TODO error here
   int scaleY = WINDOWY / (SIZEY+1 +2);
   SCALE = (scaleX <= scaleY) ? scaleX : scaleY;
 
@@ -320,13 +369,11 @@ void setColour(FILE * file, colour c) {
 void mazeBacktrack(int *pointerX, int *pointerY) {
   int prevX, prevY;
 
-  #ifdef DEBUG
-  printf("[");
-  #endif
   while (areNeighborsVisited(*pointerX, *pointerY)) {
-
     prevX = Grid[*pointerX][*pointerY].prevX;
     prevY = Grid[*pointerX][*pointerY].prevY;
+
+    // Set points for next loop
     *pointerX = prevX;
     *pointerY = prevY;
 
@@ -334,67 +381,24 @@ void mazeBacktrack(int *pointerX, int *pointerY) {
     printf(">(%i,%i)", *pointerX, *pointerY);
     #endif
     
-    if (*pointerX == Grid[*pointerX][*pointerY].prevX && *pointerY == Grid[*pointerX][*pointerY].prevY) {
-      #ifdef DEBUG
-      printf(" BACK TO THE ORIGINS ");
-      #endif
-      break; // TODO: THIS WILL NEVER HAPPEN, WILL IT?
-    }
+    // Nothing can be previous of himself except initial point
+    if (*pointerX == Grid[*pointerX][*pointerY].prevX && *pointerY == Grid[*pointerX][*pointerY].prevY)
+      break;
   }
-  #ifdef DEBUG
-  printf(" ]\n");
-  #endif
+
 }
 
-/*
- *  mazeDraw()
- *  ----------
- *  The drawing strategy consists in drawing .solution and .maze file at the same time.
- *  First solution is written, then 
- */
-void mazeDraw() { //TODO level!
+void drawGrid (struct coords * ptrInitial, struct coords * ptrFinal) {
   int x, y;
 
-  Maze.file = fopen(Maze.name, "wt");
-  Solution.file = fopen(Solution.name, "wt");
-
   // Creating holes for initial and final
-  Grid[initialPoint.x][initialPoint.y].up = 1;
-  if (GAME == 2) {
-    if (finalPoint.x == 0) Grid[finalPoint.x][finalPoint.y].left = 1;
-    if (finalPoint.y == 0) Grid[finalPoint.x][finalPoint.y].up = 1;
+  Grid[ptrInitial->x][ptrInitial->y].up = 1;
+  if (GAME == ESCAPE_GAME) {
+    if (ptrFinal->x == 0) Grid[ptrFinal->x][ptrFinal->y].left = 1;
+    if (ptrFinal->x == SIZEX) Grid[ptrFinal->x][ptrFinal->y].right = 1;
+    if (ptrFinal->y == 0) Grid[ptrFinal->x][ptrFinal->y].up = 1;
+    if (ptrFinal->y == SIZEY) Grid[ptrFinal->x][ptrFinal->y].down = 1;
   }
-
-  // Backtrack the longest path and draw solution
-
-  int tempX = finalPoint.x, tempY = finalPoint.y;
-  #ifdef DEBUG
-  printf("\nMAXDEPTH = (%i,%i) %i\n", finalPoint.x, finalPoint.y, *finalPoint.depth);
-  #endif
-
-  setColour(Solution.file,green);
-  do {
-    fillCell(1, tempX, tempY, 1, 1);
-    // #ifdef DEBUG
-    // printf("FROM (%i,%i):%i", tempX, tempY, Grid[tempX][tempY].depth);
-    // printf("\tTO (%i,%i):%i\n", Grid[tempX][tempY].prevX, Grid[tempX][tempY].prevY, Grid[Grid[tempX][tempY].prevX][Grid[tempX][tempY].prevY].depth);
-    // #endif
-    int tempX2 = Grid[tempX][tempY].prevX;
-    tempY = Grid[tempX][tempY].prevY;
-    tempX = tempX2;
-  } while (!(initialPoint.x == tempX && initialPoint.y == tempY));
-
-  // Draw initial point TODO
-  if (initialPoint.x != 0 && initialPoint.y != 0) {
-    setColour(Solution.file, blue);
-    fillCell(0 || GAME==2, initialPoint.x, initialPoint.y, 1, 1);
-  }
-
-  // Draw final point TODO
-  setColour(Solution.file, red);
-  setColour(Maze.file, magenta);
-  fillCell(0 || GAME==2, finalPoint.x, finalPoint.y, 1, 1);
-  
 
   // Draw the maze grid
   setColour(Maze.file, black);
@@ -405,11 +409,45 @@ void mazeDraw() { //TODO level!
       if (!Grid[x][y].left) { drawLine(x, y,   x, y+1); }
     }
   }
+  
+  // Draw bottom line and right line (since strategy is up/left)
   drawLine(0, SIZEY+1, SIZEX+1, SIZEY+1);
   drawLine(SIZEX+1, 0, SIZEX+1, SIZEY+1);
 
+  if (GAME == ESCAPE_GAME) { // TODO
+    setColour(Maze.file, white);
+    setColour(Solution.file, white);
+    if (ptrFinal->x == SIZEX) drawLine(ptrFinal->x+1, ptrFinal->y, ptrFinal->x+1, ptrFinal->y+1);
+    if (ptrFinal->y == SIZEY && ptrFinal->x != SIZEX) drawLine(ptrFinal->x, ptrFinal->y+1, ptrFinal->x+1, ptrFinal->y+1);
+  }
 
   // If Game == 2 (escape), draw an hole
+}
+
+/*
+ *  mazeDraw()
+ *  ----------
+ *  The drawing strategy consists in drawing .solution and .maze file at the same time.
+ *  First solution is written, then 
+ */
+void mazeDraw() { //TODO level!
+
+  Maze.file = fopen(Maze.name, "wt");
+  Solution.file = fopen(Solution.name, "wt");
+
+  // Creating holes for initial and final
+  Grid[initialPoint.x][initialPoint.y].up = 1;
+  if (GAME == 2) {
+    if (finalPoint.x == 0) Grid[finalPoint.x][finalPoint.y].left = 1;
+    if (finalPoint.y == 0) Grid[finalPoint.x][finalPoint.y].up = 1;
+  }
+  
+  // First layer
+  drawSolution(&initialPoint, &finalPoint);
+  // Second layer
+  drawMarkers(&initialPoint, &finalPoint);
+  // Third layer
+  drawGrid(&initialPoint, &finalPoint);
 
   fclose(Maze.file);
   fclose(Solution.file);
@@ -778,6 +816,10 @@ PRINT BMP?
 RESET A MAXIMUM
 
 FARE I BUCHI NEL MURO IN BASSO E A DESTRA per GAME2
+
+TORRETTA
+
+OPEN WITH maze_opener
 
 */
 
