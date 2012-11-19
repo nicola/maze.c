@@ -154,9 +154,15 @@ void evaluateCommandLine(int argc, char *argv[]) {
   }
 
   // This delete all the previous files
+
   if (DELETEFILES) {
+    #if defined(__APPLE__) || defined(__unix__) || defined(__linux__)
     system("rm -rf *.maze *.solution");
     exit(8);
+    #else
+    printf("\nmaze: *** Command: -d cannot be executed on non-Unix operating systems.  Stop.\n", argv[1]);
+    exit(8);
+    #endif
   }
 
 
@@ -816,7 +822,6 @@ void cellCarvePassage(int prevX, int prevY, int direction) {
     break;
   }
 
-
   // Set origins
   Grid[x][y].prevX = prevX;
   Grid[x][y].prevY = prevY;
@@ -982,10 +987,7 @@ static void mazeDraw_test() {
 /* TODO MISSING
 
 TORRETTA
-
 OPEN WITH maze_opener
-
-UNIT TESTING
 
 */
 
