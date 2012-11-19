@@ -4,6 +4,7 @@
 // Common - functions
 void evaluateCommandLine(int, char *arg[]);
 bool isNumeric(char*);
+void saveIfNumeric(int*, char*);
 char * timeString();
 void usage();
 

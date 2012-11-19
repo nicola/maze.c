@@ -99,13 +99,6 @@ int main(int argc, char *argv[]) {
  *  Take commands from input and extract information the program needs and evaluate them
  */
 
-void saveIfNumeric(int * ptrSetting, char * argInput) {
-  if (!isNumeric(argInput)) {
-    printf("\nmaze: *** Invalid character, use only int when <int> is required.  Stop.\n\n", SIZEY);
-    usage(); // This exits
-  }
-  *ptrSetting = atoi(argInput);
-}
 void evaluateCommandLine(int argc, char *argv[]) {
   // If no input, suggest to ask for help
    if (!argv[1]) printf("Type \"-h\" for information on available commands.\n");
@@ -186,6 +179,19 @@ bool isNumeric (char *ptrChar) {
     return 1;
   }
   return 0;
+}
+
+/*
+ *  saveIfNumeric(int*, char*)
+ *  --------------------------
+ *  If commandline inputs char, save if its a number otherwise, error.
+ */
+void saveIfNumeric(int * ptrSetting, char * argInput) {
+  if (!isNumeric(argInput)) {
+    printf("\nmaze: *** Invalid character, use only int when <int> is required.  Stop.\n\n", SIZEY);
+    usage(); // This exits
+  }
+  *ptrSetting = atoi(argInput);
 }
 
 /*
@@ -766,16 +772,13 @@ static void mazeDraw_test() {
 
 DIFFERENT LEVELS
 GUI?
-BASH SCRIPT? x
 
 PRINT BMP?
-PRIM's ?
 
 RESET A MAXIMUM
 
 FARE I BUCHI NEL MURO IN BASSO E A DESTRA per GAME2
 
-SILENT E LANCIO tramite system()
 */
 
 // THE VERY END :)
