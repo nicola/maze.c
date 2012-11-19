@@ -156,7 +156,7 @@ void evaluateCommandLine(int argc, char *argv[]) {
   // This delete all the previous files
 
   if (DELETEFILES) {
-    #if defined(__APPLE__) || defined(__unix__) || defined(__linux__)
+    #if defined(__APPLE__) || defined(__unix__) || defined(__linux__) || __CYGWIN__ || __FreeBSD__
     system("rm -rf *.maze *.solution");
     exit(8);
     #else
