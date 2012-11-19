@@ -41,7 +41,7 @@
 #define RIGHT 3
 #define WINDOWX 500
 #define WINDOWY 300
-#define DEBUG 1
+// #define DEBUG
 
 /*
  *  MOUSE_GAME
@@ -578,8 +578,10 @@ void mazeBacktrack(int *pointerX, int *pointerY) {
     *pointerX = prevX;
     *pointerY = prevY;
 
+    #ifdef DEBUG
     if (debugFile != (FILE *) 0)
       fprintf(debugFile, ">(%i,%i)", *pointerX, *pointerY);
+    #endif
 
     
     // Nothing can be previous of himself except initial point
@@ -821,11 +823,13 @@ void cellCarvePassage(int prevX, int prevY, int direction) {
   // Set new depth
   Grid[x][y].depth = Grid[prevX][prevY].depth + 1;
 
+  #ifdef DEBUG
   if (debugFile != (FILE *) 0) {
     fprintf(debugFile, "[from(%i, %i):%i]", Grid[x][y].prevX, Grid[x][y].prevY, Grid[Grid[x][y].prevX][Grid[x][y].prevY].depth);
     fprintf(debugFile, "\tto(%i, %i):%i ", x, y, Grid[x][y].depth);
     fprintf(debugFile, "\n");
   }
+  #endif
 }
 
 /*
