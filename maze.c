@@ -100,12 +100,14 @@ int main(int argc, char *argv[]) {
   prepareForDrawing();
   mazeDraw();
 
+  // If -s flag is missing, then open the new .maze and .solution
   if (!SILENTMODE) { 
     char command[60];
-    sprintf(command, "cat %s | java -jar drawapp.jar", Maze.name);
-    system(command);
 
-    sprintf(command, "cat %s | java -jar drawapp.jar", Solution.name);
+    sprintf(command, "cat %s | java -jar ./drawapp.jar", Maze.name);
+    system(command);
+    
+    sprintf(command, "cat %s | java -jar ./drawapp.jar", Solution.name);
     system(command);
   }
 
