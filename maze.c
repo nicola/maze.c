@@ -13,7 +13,7 @@
   # Use it
       ./maze -h
 
-  # Grid
+  # Grid strategy
   
   My grid is a matrix that respect as follows:
   
@@ -105,10 +105,15 @@ int main(int argc, char *argv[]) {
   if (!SILENTMODE) { 
     char command[80];
 
+    #if defined(__APPLE__) || defined(__unix__) || defined(__linux__) || __CYGWIN__ || __FreeBSD__
     sprintf(command, "cat %s | java -jar ./drawapp.jar", Maze.name);
     system(command);
     sprintf(command, "cat %s | java -jar ./drawapp.jar", Solution.name);
     system(command);
+    #else
+    printf("\nmaze: *** Drawapp: we cannot draw the maze for you, but we saved a file.\n", argv[1]);
+    printf("\nmaze: *** Perform 'cat namefile.maze | java -jar drawapp.jar' to play the maze.  Stop.\n", argv[1]);
+    #endif
   }
 
   #ifdef DEBUG
@@ -157,7 +162,6 @@ void evaluateCommandLine(int argc, char *argv[]) {
   }
 
   // This delete all the previous files
-
   if (REMOVEFILES) {
     #if defined(__APPLE__) || defined(__unix__) || defined(__linux__) || __CYGWIN__ || __FreeBSD__
     system("rm -rf *.maze *.solution");
@@ -168,8 +172,6 @@ void evaluateCommandLine(int argc, char *argv[]) {
     #endif
   }
 
-
-  
   if (LEVEL > 0 && LEVEL < 6) {
     if (SIZEX == 0 && SIZEY == 0) {
       loadLevelSize();

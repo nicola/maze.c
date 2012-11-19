@@ -1,0 +1,50 @@
+<h1 id="maze">Maze</h1>
+<p>This application allows you to play with mazes and look at the solution.</p>
+<h2 id="game">Game</h2>
+<p>There are two game you can play:</p>
+<ol style="list-style-type: decimal">
+<li><p>Mouse and cheese (MOUSE_GAME) You are a mouse and you have to go from the top-left corner of the maze to a random cell in the maze where you will find the cheese. The random cell is not exactly random as it is the most <strong>distant cell</strong>, so it will never happen that the cell will be just next to you.</p></li>
+<li><p>Escape Game (MOUSE_GAME) You have to escape from the entry to the exit. The exit will be on the wall. Its position is random generated (again, it is the furthest wall from you).</p></li>
+</ol>
+<h2 id="install">Install</h2>
+<p>To install the app, I created a make file, do as follows:</p>
+<pre><code>make</code></pre>
+<h2 id="play">Play</h2>
+<p>To play the app you can just do:</p>
+<pre><code>./maze</code></pre>
+<p>This will generate a random .maze and a .solution files titled with their timestamps and with a random colourscheme.</p>
+<p>If you want to play later the game, you can alway play with</p>
+<pre><code># Play
+cat MAZEYOUWANT.maze | java -jar drawapp.jar
+
+# Watch solution
+cat MAZEYOUWANT.solution | java -jar drawapp.jar</code></pre>
+<h3 id="levels">Levels</h3>
+<p>Levels are just pre-configured settings. If you use <code>-x</code>, <code>-y</code> configs, the pre-configured setting will be replaced.</p>
+<h3 id="breadcrumbs">Breadcrumbs</h3>
+<p>Breadcrumbs will help you to go through the maze. Default breadcrumbs is 0, so there will not be any. If you set breadcrumbs to be 5 <code>-b5</code>, every 5 steps you are required to do, there will be a breadcrumb. Follow them to find the solution.</p>
+<h3 id="colourschemes">Colourschemes</h3>
+<p>We have 4 pre-sets:</p>
+<ol style="list-style-type: decimal">
+<li>Default <code>-c1</code></li>
+<li>Star wars <code>-c2</code></li>
+<li>Funky <code>-c3</code></li>
+<li>Black/White <code>-c4</code></li>
+</ol>
+<p>If you set -c0 it will be random chosen.</p>
+<h3 id="play-later-with--s">Play later with <code>-s</code></h3>
+<p>When you generate a maze it starts directly on your drawapp. If you don’t want to play directly, use <code>-s</code></p>
+<h3 id="optional-command-line-inputs">Optional command line inputs</h3>
+<p>To get all the optional commands do:</p>
+<pre><code>./maze -h
+/maze [-x&lt;int&gt;] [-y&lt;int&gt;] [-l&lt;int&gt;] [-g&lt;int&gt;] 
+
+Usage:
+-x&lt;int&gt;         Horizontal cells (default: 10)
+  -y&lt;int&gt;       Vertical cells (default: 10)
+  -l&lt;int&gt;       Level from 1 to 5 (default: 2)
+  -b&lt;int&gt;       Frequency of breadcrumbs, 0 is no breadcrumbs (default: 0)
+  -g&lt;int&gt;       Game: 1 for Mouse&amp;cheese, 2 for Escape (default: 1)
+  -c&lt;int&gt;       Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for B/W
+  -s            Silently create maze files without starting draw
+  -r            Delete all the previous *.maze and *.solution</code></pre>
