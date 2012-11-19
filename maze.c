@@ -66,9 +66,10 @@ struct colourscheme Scheme; // current-colour-Scheme
 unsigned int SIZEX;
 unsigned int SIZEY;
 unsigned int LEVEL;
+unsigned int BREADCRUMBS;
 unsigned int GAME = MOUSE_GAME;
 bool SILENTMODE; // if true, it doesnt launch drawapp automagically
-bool DELETEFILES; // if true, it deletes all your *.solution *.maze
+bool REMOVEFILES; // if true, it deletes all your *.solution *.maze
 
 
 // Settings - Maze
@@ -102,11 +103,10 @@ int main(int argc, char *argv[]) {
 
   // If -s flag is missing, then open the new .maze and .solution
   if (!SILENTMODE) { 
-    char command[60];
+    char command[80];
 
     sprintf(command, "cat %s | java -jar ./drawapp.jar", Maze.name);
     system(command);
-    
     sprintf(command, "cat %s | java -jar ./drawapp.jar", Solution.name);
     system(command);
   }
@@ -141,11 +141,12 @@ void evaluateCommandLine(int argc, char *argv[]) {
       case 'x': saveIfNumeric(&SIZEX, &argv[1][2]); break;
       case 'y': saveIfNumeric(&SIZEY, &argv[1][2]); break;
       case 'l': saveIfNumeric(&LEVEL, &argv[1][2]); break;
+      case 'b': saveIfNumeric(&BREADCRUMBS, &argv[1][2]); break;
       case 'g': saveIfNumeric(&GAME, &argv[1][2]); break;
       case 'c': saveIfNumeric(&COLOURSCHEME, &argv[1][2]); break;
       case 'h': usage(); break;
       case 's': SILENTMODE = true; break;
-      case 'd': DELETEFILES = true; break;
+      case 'r': REMOVEFILES = true; break;
       default:
       printf("\nmaze: *** Command: %s not found.  Stop.\n", argv[1]);
       printf("maze: *** Exiting from the maze, you are at safe\n\n", argv[1]);
@@ -157,12 +158,12 @@ void evaluateCommandLine(int argc, char *argv[]) {
 
   // This delete all the previous files
 
-  if (DELETEFILES) {
+  if (REMOVEFILES) {
     #if defined(__APPLE__) || defined(__unix__) || defined(__linux__) || __CYGWIN__ || __FreeBSD__
     system("rm -rf *.maze *.solution");
     exit(8);
     #else
-    printf("\nmaze: *** Command: -d cannot be executed on non-Unix operating systems.  Stop.\n", argv[1]);
+    printf("\nmaze: *** Command: -r cannot be executed on non-Unix operating systems.  Stop.\n", argv[1]);
     exit(8);
     #endif
   }
@@ -213,9 +214,16 @@ void evaluateCommandLine(int argc, char *argv[]) {
     printf("  -l<int>        Level from 1 to 5 (default: 2)\n");
     exit(8);
   }
+  
+  if (BREADCRUMBS < 0) {
+    printf("\nmaze: *** -d%i not in range [0-10].  Stop.\n", BREADCRUMBS);
+    printf("\nUsage:\n");
+    printf("  -b<int>        Frequency of breadcrumbs, 0 means no breadcrumbs (default: 0)\n");
+    exit(8);
+  }
 
   if (COLOURSCHEME > 4) {
-    printf("\nmaze: *** -c%i not in range [1-3].  Stop.\n", LEVEL);
+    printf("\nmaze: *** -c%i not in range [1-3].  Stop.\n", COLOURSCHEME);
     printf("\nUsage:\n");
     printf("  -c<int>        Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for B/W\n");
     exit(8);
@@ -286,15 +294,41 @@ void usage() {
   printf("  -x<int>        Horizontal cells (default: 10)\n");
   printf("  -y<int>        Vertical cells (default: 10)\n");
   printf("  -l<int>        Level from 1 to 5 (default: 2)\n");
+  printf("  -b<int>        Frequency of breadcrumbs, 0 is no breadcrumbs (default: 0)\n");
   printf("  -g<int>        Game: 1 for Mouse&cheese, 2 for Escape (default: 1)\n");
   printf("  -c<int>        Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for B/W\n");
   printf("  -s             Silently create maze files without starting drawapp\n");
-  printf("  -d             Delete all the previous *.maze and *.solution\n");
+  printf("  -r             Delete all the previous *.maze and *.solution\n");
   exit(8);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 //   Drawing
+
+/*
+ *  drawBreadcrumbs(int, int)
+ *  -------------------------
+ *  Draws little breadcrumbs to help the user solving the maze.
+ */
+  void drawBreadcrumbs(int x, int y) {
+    x = x*SCALE + PADDINGLEFT;
+    y = y*SCALE + PADDINGTOP;
+    int currentScale = SCALE;
+    setColour(Maze.file, Scheme.breadcrumbs);
+
+    //  Offset and breadcrumb will follow this pattern |-20-|-----60-----|-20-|
+    int padding = (SCALE * 20) / 100;
+    if (padding < 2) padding = 2; // padding can't be too small
+
+    // Make sure the scale is not too small
+    if (SCALE > 3) {
+      x+=padding;
+      y+=padding;
+      currentScale = (SCALE*60)/100;
+    } 
+
+    fprintf(Maze.file, "FR %i %i %i %i\n", x, y, currentScale, currentScale);
+  }
 
 /*
  *  drawGrid(struct coords, struct coords)
@@ -383,10 +417,20 @@ void drawMarkers(struct coords * ptrInitial, struct coords * ptrFinal) {
  */
 void drawSolution(struct coords * toCoords, struct coords * fromCoords) {
   int tempX = fromCoords->x, tempY = fromCoords->y;
+  
+  if (BREADCRUMBS == 1 ) {
+    printf("\nmaze: message: Hey that's gonna be too easy! next time use -b5. Continue.\n");
+  }
+  
   setColour(Solution.file, Scheme.solution);
 
   // Start filling from last cell
   do {
+
+    if (BREADCRUMBS != 0 && Grid[tempX][tempY].depth % BREADCRUMBS == 0) {
+        drawBreadcrumbs(tempX, tempY);
+    }
+    // Fill the cell with solution color
     fillCell(1, tempX, tempY);
     int tempX2 = Grid[tempX][tempY].prevX;
     tempY = Grid[tempX][tempY].prevY;
@@ -399,7 +443,7 @@ void drawSolution(struct coords * toCoords, struct coords * fromCoords) {
 
 /*
  *  fillCell(bool, int, int)
- *  ----------------------------------
+ *  ------------------------
  *  Fill a cell with a plain colour
  */
 void fillCell(bool onlySolution, int x, int y) {
@@ -411,7 +455,7 @@ void fillCell(bool onlySolution, int x, int y) {
 
 /*
  *  fillMaze(bool, int, int)
- *  ----------------------------------
+ *  ------------------------
  *  Fill a the maze with a plain colour
  */
 void fillMaze() {
@@ -423,7 +467,7 @@ void fillMaze() {
 
 /*
  *  fillWindow(bool, int, int)
- *  ----------------------------------
+ *  --------------------------
  *  Fill a the window with a plain colour
  */
 void fillWindow() {
@@ -446,6 +490,7 @@ void loadColourScheme() {
     case 1:
     Scheme.bgWindow = white;
     Scheme.bgMaze = white;
+    Scheme.breadcrumbs = orange;
     Scheme.lines = black;
     Scheme.solution = green;
     Scheme.finalMarker = magenta;
@@ -454,6 +499,7 @@ void loadColourScheme() {
     case 2:
     Scheme.bgWindow = darkgray;
     Scheme.bgMaze = black;
+    Scheme.breadcrumbs = red;
     Scheme.lines = yellow;
     Scheme.solution = blue;
     Scheme.finalMarker = cyan;
@@ -462,6 +508,7 @@ void loadColourScheme() {
     case 3:
     Scheme.bgWindow = orange;
     Scheme.bgMaze = pink;
+    Scheme.breadcrumbs = yellow;
     Scheme.lines = cyan;
     Scheme.solution = yellow;
     Scheme.finalMarker = red;
@@ -470,6 +517,7 @@ void loadColourScheme() {
     case 4:
     Scheme.bgWindow = black;
     Scheme.bgMaze = white;
+    Scheme.breadcrumbs = lightgray;
     Scheme.lines = black;
     Scheme.solution = yellow;
     Scheme.finalMarker = orange;
@@ -479,7 +527,7 @@ void loadColourScheme() {
 
 /*
  *  loadLevelSize()
- *  ------------------
+ *  ---------------
  *  Load level (pre-fixed sizes of the maze)
  */
 void loadLevelSize() {
@@ -515,7 +563,7 @@ void loadLevelSize() {
  *  Choose the smallest scale, to make it look nicer and set the padding for x and y 
  */
 void prepareForDrawing() {
-  int scaleX = WINDOWX / (SIZEX+1 +2); // +2 is the top/left padding
+  int scaleX = WINDOWX / (SIZEX+1 +2); // +2 is the top/left padding like there were two more cells
   int scaleY = WINDOWY / (SIZEY+1 +2);
   SCALE = (scaleX <= scaleY) ? scaleX : scaleY;
   
@@ -524,18 +572,16 @@ void prepareForDrawing() {
 
   PADDINGTOP = (WINDOWY - SCALE*(SIZEY+1))/2;
   PADDINGLEFT = (WINDOWX - SCALE*(SIZEX+1))/2;
-
-  // Level here
-  // int depthLevel = (finalPoint.depth / 10)*LEVEL;
   
   if (COLOURSCHEME == 0) COLOURSCHEME = (rand() % 4)+1;
   loadColourScheme();
   
   // Display all settings
   printf("\nYour settings:\n");
-  printf("-x, Horizontal cells: %i\n", SIZEX);
-  printf("-y, Vertical cells: %i\n", SIZEY);
+  printf("-x, Horizontal cells: %i\n", SIZEX+1);
+  printf("-y, Vertical cells: %i\n", SIZEY+1);
   printf("-l Level: %i\n", LEVEL);
+  printf("-b Breadcrumbs frequency: %i\n", BREADCRUMBS);
   printf("-g Game: %i\n", GAME);
   printf("-c Colourscheme: %i\n", COLOURSCHEME);
   printf("-s Silent mode: %i\n", SILENTMODE);
@@ -605,7 +651,7 @@ void mazeBacktrack(int *pointerX, int *pointerY) {
  *  The drawing strategy consists in drawing .solution and .maze file at the same time.
  *  First solution is written, then 
  */
-void mazeDraw() { //TODO level!
+void mazeDraw() {
 
   Maze.file = fopen(Maze.name, "wt");
   Solution.file = fopen(Solution.name, "wt");
@@ -780,7 +826,7 @@ void mazeSetLongestPath(int newX, int newY) {
 
 /*
  *  areNeighborsVisited(int, int)
- *  ----------------------------
+ *  -----------------------------
  *  Check if neighboors of the cell are visited
  */
 bool areNeighborsVisited(int x, int y) {
@@ -864,7 +910,7 @@ unsigned int randomDirection() {
 
 /*
  *  mainTest()
- *  ----------------
+ *  ----------
  *  Unit testing
  */
 int mainTest(void) {
@@ -984,13 +1030,5 @@ static void mazeBacktrack_test() {
 static void mazeDraw_test() {
   mazeDraw();
 }
-
-
-/* TODO MISSING
-
-TORRETTA
-OPEN WITH maze_opener
-
-*/
 
 // THE VERY END :)

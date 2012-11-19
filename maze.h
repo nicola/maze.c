@@ -12,6 +12,7 @@ typedef enum colour colour;
 struct colourscheme {
   colour bgWindow;
   colour bgMaze;
+  colour breadcrumbs;
   colour lines;
   colour solution;
   colour finalMarker;
@@ -45,6 +46,7 @@ void usage();
 // Drawing
 
 // Drawing - functions
+void drawBreadcrumbs(int, int);
 void drawGrid (struct coords *, struct coords *);
 void drawLine(int, int, int, int);
 void drawMarkers(struct coords *, struct coords *);
