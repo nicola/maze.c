@@ -55,25 +55,25 @@
 // #define DEBUG
 
 // Settings - Drawing
-int SCALE;
-int PADDINGTOP;
-int PADDINGLEFT;
-int COLOURSCHEME = 1;
+unsigned int SCALE;
+unsigned int PADDINGTOP;
+unsigned int PADDINGLEFT;
+unsigned int COLOURSCHEME;
 struct drawing Maze;
 struct drawing Solution;
 struct colourscheme Scheme; // current-colour-Scheme
 
 // Settings - Game
-int SIZEX;
-int SIZEY;
-int LEVEL;
-int GAME = MOUSE_GAME;
+unsigned int SIZEX;
+unsigned int SIZEY;
+unsigned int LEVEL;
+unsigned int GAME = MOUSE_GAME;
 bool SILENTMODE; // if true, it doesnt launch drawapp automagically
 bool DELETEFILES; // if true, it deletes all your *.solution *.maze
 
 
 // Settings - Maze
-int currentX, currentY;
+unsigned int currentX, currentY;
 struct cell Grid[250][150];
 struct coords initialPoint;
 struct coords finalPoint;
@@ -92,7 +92,6 @@ int main(int argc, char *argv[]) {
   mazeGenerate(&currentX, &currentY);
 
   // Draw the maze
-  loadColourScheme();
   prepareForDrawing();
   mazeDraw();
 
@@ -194,10 +193,10 @@ void evaluateCommandLine(int argc, char *argv[]) {
     exit(8);
   }
 
-  if (COLOURSCHEME < 1 || COLOURSCHEME > 4) {
+  if (COLOURSCHEME > 4) {
     printf("\nmaze: *** -c%i not in range [1-3].  Stop.\n", LEVEL);
     printf("\nUsage:\n");
-    printf("  -c<int>        Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for Chess\n");
+    printf("  -c<int>        Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for B/W\n");
     exit(8);
   }
   
@@ -206,12 +205,7 @@ void evaluateCommandLine(int argc, char *argv[]) {
     printf("\nUsage:\n");
     printf("  -g<int>        Game: 1 for Mouse&cheese, 2 for Escape (default: 1)\n");
     exit(8);
-  }  
-
-  printf("\nYour settings\n");
-  printf("Horizontal cells: %i\n", SIZEX);
-  printf("Vertical cells: %i\n", SIZEY);
-  printf("Game: %i\n", GAME);
+  }
 }
 
 /*
@@ -272,7 +266,7 @@ void usage() {
   printf("  -y<int>        Vertical cells (default: 10)\n");
   printf("  -l<int>        Level from 1 to 5 (default: 2)\n");
   printf("  -g<int>        Game: 1 for Mouse&cheese, 2 for Escape (default: 1)\n");
-  printf("  -c<int>        Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for Chess\n");
+  printf("  -c<int>        Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for B/W\n");
   printf("  -s             Silently create maze files without starting drawapp\n");
   printf("  -d             Delete all the previous *.maze and *.solution\n");
   exit(8);
@@ -346,6 +340,7 @@ void drawLine(int x1, int x2, int x3, int x4) {
  *  Put a colored square (marker) at the initial and final point
  */
 void drawMarkers(struct coords * ptrInitial, struct coords * ptrFinal) {
+
   // Draw initial point
   // Although this will happen only with Col.Sch.= 4, this may be extended in future
   if (COLOURSCHEME == 4) {
@@ -453,6 +448,7 @@ void loadColourScheme() {
     Scheme.solution = yellow;
     Scheme.finalMarker = red;
     break;
+    // B/W
     case 4:
     Scheme.bgWindow = black;
     Scheme.bgMaze = white;
@@ -513,10 +509,18 @@ void prepareForDrawing() {
 
   // Level here
   // int depthLevel = (finalPoint.depth / 10)*LEVEL;
-
-  printf("SCALE: %i from scaleX:%i, scaleY:%i\n", SCALE, scaleX, scaleY);
-  printf("PADDINGTOP: %i\n", PADDINGTOP);
-  printf("PADDINGLEFT: %i\n", PADDINGLEFT);
+  
+  if (COLOURSCHEME == 0) COLOURSCHEME = (rand() % 4)+1;
+  loadColourScheme();
+  
+  // Display all settings
+  printf("\nYour settings:\n");
+  printf("-x, Horizontal cells: %i\n", SIZEX);
+  printf("-y, Vertical cells: %i\n", SIZEY);
+  printf("-l Level: %i\n", LEVEL);
+  printf("-g Game: %i\n", GAME);
+  printf("-c Colourscheme: %i\n", COLOURSCHEME);
+  printf("-s Silent mode: %i\n", SILENTMODE);
 }
 
 
@@ -966,6 +970,8 @@ static void mazeDraw_test() {
 TORRETTA
 
 OPEN WITH maze_opener
+
+UNIT TESTING
 
 */
 
