@@ -9,6 +9,14 @@ struct drawing {
 enum colour {black,blue,cyan,darkgray,gray,green,lightgray,magenta,orange,pink,red,white,yellow};
 typedef enum colour colour;
 
+struct colourscheme {
+  colour bgWindow;
+  colour bgMaze;
+  colour lines;
+  colour solution;
+  colour finalMarker;
+};
+
 // Definitions - cells
 struct cell {
   bool visited;
@@ -37,10 +45,12 @@ void usage();
 // Drawing
 
 // Drawing - functions
+void drawGrid (struct coords *, struct coords *);
 void drawLine(int, int, int, int);
 void drawMarkers(struct coords *, struct coords *);
 void drawSolution(struct coords *, struct coords *);
 void fillCell(bool, int, int);
+void loadColourScheme();
 void prepareForDrawing();
 void setColour(FILE*, colour);
 

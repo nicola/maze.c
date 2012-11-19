@@ -47,8 +47,10 @@
 int SCALE;
 int PADDINGTOP;
 int PADDINGLEFT;
+int COLOURSCHEME = 1;
 struct drawing Maze;
 struct drawing Solution;
+struct colourscheme Scheme; // current-colour-Scheme
 
 // Settings - Game
 int SIZEX;
@@ -78,6 +80,7 @@ int main(int argc, char *argv[]) {
   mazeGenerate(&currentX, &currentY);
 
   // Draw the maze
+  loadColourScheme();
   prepareForDrawing();
   mazeDraw();
 
@@ -113,6 +116,7 @@ void evaluateCommandLine(int argc, char *argv[]) {
       case 'y': saveIfNumeric(&SIZEY, &argv[1][2]); break;
       case 'l': saveIfNumeric(&LEVEL, &argv[1][2]); break;
       case 'g': saveIfNumeric(&GAME, &argv[1][2]); break;
+      case 'c': saveIfNumeric(&COLOURSCHEME, &argv[1][2]); break;
       case 'h': usage(); break;
       case 's': SILENTMODE = true; break;
       default:
@@ -158,6 +162,13 @@ void evaluateCommandLine(int argc, char *argv[]) {
     printf("  -l<int>        Level from 1 to 10 (default: 10)\n");
     exit(8);
   }
+
+  if (COLOURSCHEME < 1 || COLOURSCHEME > 4) {
+    printf("\nmaze: *** -c%i not in range [1-3].  Stop.\n", LEVEL);
+    printf("\nUsage:\n");
+    printf("  -c<int>        Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for Chess\n");
+    exit(8);
+  }
   
   if (GAME != MOUSE_GAME && GAME != ESCAPE_GAME) {
     printf("\nmaze: *** -g%i not in range.  Stop.\n", GAME);
@@ -174,8 +185,8 @@ void evaluateCommandLine(int argc, char *argv[]) {
 }
 
 /*
- *  isNumeric(int*)
- *  ---------------
+ *  isNumeric(char*)
+ *  ----------------
  *  Check if a char represents a number
  */
 bool isNumeric (char *ptrChar) {
@@ -208,7 +219,7 @@ void saveIfNumeric(int * ptrSetting, char * argInput) {
  *  Returns a pointer of timestamp
  */
 char * timeString() {
-  time_t timer; //TODO function
+  time_t timer;
   struct tm* timeInfo;
   static char timeStr[16];
 
@@ -231,6 +242,7 @@ void usage() {
   printf("  -y<int>        Vertical cells (default: 10)\n");
   printf("  -l<int>        Level from 1 to 10 (default: 10)\n");
   printf("  -g<int>        Game: 1 for Mouse&cheese, 2 for Escape (default: 1)\n");
+  printf("  -c<int>        Colourscheme: 1 for Default, 2 for Star Wars, 3 for Funky, 4 for Chess\n");
   printf("  -s             Silently create maze files without starting drawapp\n");
   exit(8);
 }
@@ -239,9 +251,50 @@ void usage() {
 //   Drawing
 
 /*
+ *  drawGrid(struct coords, struct coords)
+ *  --------------------------------------
+ *  Draw grid (including holes) Strategy is that lines are drawn if .up == 1 || .left == 1
+ */
+void drawGrid (struct coords * ptrInitial, struct coords * ptrFinal) {
+  int x, y;
+
+  // Creating holes for initial and final
+  Grid[ptrInitial->x][ptrInitial->y].up = 1;
+  if (GAME == ESCAPE_GAME) {
+    if (ptrFinal->x == 0) Grid[ptrFinal->x][ptrFinal->y].left = 1;
+    if (ptrFinal->x == SIZEX) Grid[ptrFinal->x][ptrFinal->y].right = 1;
+    if (ptrFinal->y == 0) Grid[ptrFinal->x][ptrFinal->y].up = 1;
+    if (ptrFinal->y == SIZEY) Grid[ptrFinal->x][ptrFinal->y].down = 1;
+  }
+
+  // Draw the maze grid
+  setColour(Maze.file, Scheme.lines);
+  setColour(Solution.file, Scheme.lines);
+  for (x = 0; x <= SIZEX; x++) {
+    for (y = 0; y <= SIZEY; y++) {
+      if (!Grid[x][y].up)   { drawLine(x, y, x+1,   y); }
+      if (!Grid[x][y].left) { drawLine(x, y,   x, y+1); }
+    }
+  }
+  
+  // Draw bottom line and right line (since strategy is up/left)
+  drawLine(0, SIZEY+1, SIZEX+1, SIZEY+1);
+  drawLine(SIZEX+1, 0, SIZEX+1, SIZEY+1);
+  
+  // Draw holes on bottom or right if GAME is ESCAPE
+  if (GAME == ESCAPE_GAME) {
+    setColour(Maze.file, Scheme.bgMaze);
+    setColour(Solution.file, Scheme.bgMaze);
+    if (ptrFinal->x == SIZEX) drawLine(ptrFinal->x+1, ptrFinal->y, ptrFinal->x+1, ptrFinal->y+1);
+    // X is preferred over Y
+    if (ptrFinal->y == SIZEY && ptrFinal->x != SIZEX) drawLine(ptrFinal->x, ptrFinal->y+1, ptrFinal->x+1, ptrFinal->y+1);
+  }
+}
+
+/*
  *  drawLine(int, int, int, int)
  *  ----------------------------
- *  Fill a cell with a plain colour
+ *  Draw a line from one point to another
  */
 void drawLine(int x1, int x2, int x3, int x4) {
   x1 = x1*SCALE + PADDINGLEFT;
@@ -263,19 +316,20 @@ void drawLine(int x1, int x2, int x3, int x4) {
  */
 void drawMarkers(struct coords * ptrInitial, struct coords * ptrFinal) {
   // Draw initial point
-  // Although this will never happen, this may be extended in future
-  if (ptrInitial->x != 0 && ptrInitial->y != 0) {
-    setColour(Solution.file, blue);
-    fillCell(GAME==ESCAPE_GAME, ptrInitial->x, ptrInitial->y);
+  // Although this will happen only with Col.Sch.= 4, this may be extended in future
+  if (COLOURSCHEME == 4) {
+    setColour(Maze.file, Scheme.finalMarker);
+    setColour(Solution.file, Scheme.finalMarker);
+    fillCell(0, ptrInitial->x, ptrInitial->y);
   }
 
   // Draw final point
-  setColour(Solution.file, red);
-  setColour(Maze.file, magenta);
-  // GAME == 2 means that it will fill the finalPoint when playing ESCAPE_GAME
-  if (GAME != ESCAPE_GAME) fillCell(0, ptrFinal->x, ptrFinal->y);
+  setColour(Solution.file, Scheme.finalMarker);
+  setColour(Maze.file, Scheme.finalMarker);
+  // GAME != ESCAPE_GAME means that it will fill the finalPoint when playing ESCAPE_GAME
+  // In addition, always shows with the dark colourscheme 4
+  if (GAME != ESCAPE_GAME || COLOURSCHEME == 4) fillCell(0, ptrFinal->x, ptrFinal->y);
 }
-
 
 /*
  *  drawSolution(coords*, coords*)
@@ -285,7 +339,7 @@ void drawMarkers(struct coords * ptrInitial, struct coords * ptrFinal) {
  */
 void drawSolution(struct coords * toCoords, struct coords * fromCoords) {
   int tempX = fromCoords->x, tempY = fromCoords->y;
-  setColour(Solution.file,green);
+  setColour(Solution.file, Scheme.solution);
 
   // Start filling from last cell
   do {
@@ -312,6 +366,73 @@ void fillCell(bool onlySolution, int x, int y) {
 }
 
 /*
+ *  fillMaze(bool, int, int)
+ *  ----------------------------------
+ *  Fill a the maze with a plain colour
+ */
+void fillMaze() {
+  setColour(Maze.file, Scheme.bgMaze);
+  setColour(Solution.file, Scheme.bgMaze);
+  fprintf(Maze.file, "FR %i %i %i %i\n", PADDINGLEFT, PADDINGTOP, SCALE*(SIZEX+1), SCALE*(SIZEY+1));
+  fprintf(Solution.file, "FR %i %i %i %i\n", PADDINGLEFT, PADDINGTOP, SCALE*(SIZEX+1), SCALE*(SIZEY+1));
+}
+
+/*
+ *  fillWindow(bool, int, int)
+ *  ----------------------------------
+ *  Fill a the window with a plain colour
+ */
+void fillWindow() {
+  setColour(Maze.file, Scheme.bgWindow);
+  setColour(Solution.file, Scheme.bgWindow);
+  fprintf(Maze.file, "FR %i %i %i %i\n", 0, 0, WINDOWX, WINDOWY);
+  fprintf(Solution.file, "FR %i %i %i %i\n", 0, 0, WINDOWX, WINDOWY);
+  setColour(Maze.file, Scheme.bgMaze);
+  setColour(Solution.file, Scheme.bgMaze);
+}
+
+/*
+ *  loadColourScheme()
+ *  ------------------
+ *  Load template colourscheme saved in in COLOURSCHEME
+ */
+void loadColourScheme() {
+  switch(COLOURSCHEME) {
+    // Default
+    case 1:
+    Scheme.bgWindow = white;
+    Scheme.bgMaze = white;
+    Scheme.lines = black;
+    Scheme.solution = green;
+    Scheme.finalMarker = magenta;
+    break;
+    // Star wars
+    case 2:
+    Scheme.bgWindow = darkgray;
+    Scheme.bgMaze = black;
+    Scheme.lines = yellow;
+    Scheme.solution = blue;
+    Scheme.finalMarker = cyan;
+    break;
+    // Funky
+    case 3:
+    Scheme.bgWindow = orange;
+    Scheme.bgMaze = pink;
+    Scheme.lines = cyan;
+    Scheme.solution = yellow;
+    Scheme.finalMarker = red;
+    break;
+    case 4:
+    Scheme.bgWindow = black;
+    Scheme.bgMaze = white;
+    Scheme.lines = black;
+    Scheme.solution = yellow;
+    Scheme.finalMarker = orange;
+    break;
+  }
+}
+
+/*
  *  prepareForDrawing()
  *  -------------------
  *  Compare the scale of x and y (window size) / (size of maze + margin)
@@ -332,6 +453,7 @@ void prepareForDrawing() {
   printf("PADDINGTOP: %i\n", PADDINGTOP);
   printf("PADDINGLEFT: %i\n", PADDINGLEFT);
 }
+
 
 /*
  *  setColour(FILE*, colour)
@@ -388,42 +510,6 @@ void mazeBacktrack(int *pointerX, int *pointerY) {
 
 }
 
-void drawGrid (struct coords * ptrInitial, struct coords * ptrFinal) {
-  int x, y;
-
-  // Creating holes for initial and final
-  Grid[ptrInitial->x][ptrInitial->y].up = 1;
-  if (GAME == ESCAPE_GAME) {
-    if (ptrFinal->x == 0) Grid[ptrFinal->x][ptrFinal->y].left = 1;
-    if (ptrFinal->x == SIZEX) Grid[ptrFinal->x][ptrFinal->y].right = 1;
-    if (ptrFinal->y == 0) Grid[ptrFinal->x][ptrFinal->y].up = 1;
-    if (ptrFinal->y == SIZEY) Grid[ptrFinal->x][ptrFinal->y].down = 1;
-  }
-
-  // Draw the maze grid
-  setColour(Maze.file, black);
-  setColour(Solution.file, black);
-  for (x = 0; x <= SIZEX; x++) {
-    for (y = 0; y <= SIZEY; y++) {
-      if (!Grid[x][y].up)   { drawLine(x, y, x+1,   y); }
-      if (!Grid[x][y].left) { drawLine(x, y,   x, y+1); }
-    }
-  }
-  
-  // Draw bottom line and right line (since strategy is up/left)
-  drawLine(0, SIZEY+1, SIZEX+1, SIZEY+1);
-  drawLine(SIZEX+1, 0, SIZEX+1, SIZEY+1);
-
-  if (GAME == ESCAPE_GAME) { // TODO
-    setColour(Maze.file, white);
-    setColour(Solution.file, white);
-    if (ptrFinal->x == SIZEX) drawLine(ptrFinal->x+1, ptrFinal->y, ptrFinal->x+1, ptrFinal->y+1);
-    if (ptrFinal->y == SIZEY && ptrFinal->x != SIZEX) drawLine(ptrFinal->x, ptrFinal->y+1, ptrFinal->x+1, ptrFinal->y+1);
-  }
-
-  // If Game == 2 (escape), draw an hole
-}
-
 /*
  *  mazeDraw()
  *  ----------
@@ -441,12 +527,16 @@ void mazeDraw() { //TODO level!
     if (finalPoint.x == 0) Grid[finalPoint.x][finalPoint.y].left = 1;
     if (finalPoint.y == 0) Grid[finalPoint.x][finalPoint.y].up = 1;
   }
-  
+
   // First layer
-  drawSolution(&initialPoint, &finalPoint);
+  fillWindow();
   // Second layer
-  drawMarkers(&initialPoint, &finalPoint);
+  fillMaze();
   // Third layer
+  drawSolution(&initialPoint, &finalPoint);
+  // Fourh layer
+  drawMarkers(&initialPoint, &finalPoint);
+  // Fifth layer
   drawGrid(&initialPoint, &finalPoint);
 
   fclose(Maze.file);
@@ -466,7 +556,7 @@ void mazeGenerate(int *pointerX, int *pointerY) {
     mazeBacktrack(pointerX, pointerY);
     mazeGrow(pointerX, pointerY);
     cellVisited++;
-  } while (cellVisited < (SIZEX+1)*(SIZEY+1)); // TODO check better
+  } while (cellVisited < (SIZEX+1)*(SIZEY+1));
   return;
 }
 
@@ -515,7 +605,7 @@ void mazeGrow(int *pointerX, int *pointerY) {
  *  ----------------
  *  Creates Maze and Solution files, set the first and the last point.
  */
-void mazeInitialize() { //TODO TO BE TESTED
+void mazeInitialize() {
 
   // Prepare .maze and .solution files
   char * timeStr = timeString();
@@ -600,9 +690,9 @@ void mazeSetLongestPath(int newX, int newY) {
 //   Cell
 
 /*
- *  mazeSetLongestPath(int, int)
+ *  areNeighborsVisited(int, int)
  *  ----------------------------
- *  Save length of the path (depth) if higher than previous record.
+ *  Check if neighboors of the cell are visited
  */
 bool areNeighborsVisited(int x, int y) {
   bool up = (y == 0) ? 1 : isVisited(x, y-1);
@@ -616,7 +706,7 @@ bool areNeighborsVisited(int x, int y) {
 /*
  *  cellCarvePassage(int, int, int)
  *  -------------------------------
- *  Save length of the path (depth) if higher than previous record.
+ *  Set the Grid[][] so that there will be an hole from prevX, prevY to a certain direction
  */
 void cellCarvePassage(int prevX, int prevY, int direction) {
   int x = prevX;
@@ -662,7 +752,7 @@ void cellCarvePassage(int prevX, int prevY, int direction) {
 /*
  *  isVisited(int, int)
  *  -------------------
- *  Save length of the path (depth) if higher than previous record.
+ *  Check if cell is visited
  */
 bool isVisited(int x, int y) {
   if (x < 0 || y < 0 || x > SIZEX || y > SIZEY) return false;
@@ -767,7 +857,7 @@ static void mazeGrow_test() {
   mazeGrow(&currentX,&currentY);
   assert(Grid[2][3].visited || Grid[3][2].visited || Grid[2][1].visited || Grid[1][2].visited);
 }
-static void mazeBacktrack_test() { //TODO
+static void mazeBacktrack_test() {
   mazeReset();
 
   Grid[2][1].visited = 1;
@@ -809,13 +899,8 @@ static void mazeDraw_test() {
 /* TODO MISSING
 
 DIFFERENT LEVELS
-GUI?
-
-PRINT BMP?
 
 RESET A MAXIMUM
-
-FARE I BUCHI NEL MURO IN BASSO E A DESTRA per GAME2
 
 TORRETTA
 
