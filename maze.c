@@ -41,6 +41,7 @@
 #define RIGHT 3
 #define WINDOWX 500
 #define WINDOWY 300
+#define DEBUG 1
 
 /*
  *  MOUSE_GAME
@@ -51,8 +52,6 @@
  */
 #define MOUSE_GAME 1
 #define ESCAPE_GAME 2
-
-// #define DEBUG
 
 // Settings - Drawing
 unsigned int SCALE;
@@ -77,6 +76,12 @@ unsigned int currentX, currentY;
 struct cell Grid[250][150];
 struct coords initialPoint;
 struct coords finalPoint;
+
+// Debug
+#ifdef DEBUG
+FILE * debugFile;
+char debugFileName[] = "logfile.debug";
+#endif
 
 
 int main(int argc, char *argv[]) {
@@ -103,6 +108,14 @@ int main(int argc, char *argv[]) {
     sprintf(command, "cat %s | java -jar drawapp.jar", Solution.name);
     system(command);
   }
+
+  #ifdef DEBUG
+  // This will perform unit tests, they will print output in logfile.debug
+  // If a test fail, the program will exit with an error
+  debugFile = fopen(debugFileName, "wt");
+  mainTest();
+  fclose(debugFile);
+  #endif
 
   return 0;
 }
@@ -329,9 +342,6 @@ void drawLine(int x1, int x2, int x3, int x4) {
 
   fprintf(Maze.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
   fprintf(Solution.file, "DL %i %i %i %i\n", x1, x2, x3, x4);
-  #ifdef DEBUG
-  // printf("DL %i %i %i %i\n", x1, x2, x3, x4);
-  #endif
 }
 
 /*
@@ -568,9 +578,9 @@ void mazeBacktrack(int *pointerX, int *pointerY) {
     *pointerX = prevX;
     *pointerY = prevY;
 
-    #ifdef DEBUG
-    printf(">(%i,%i)", *pointerX, *pointerY);
-    #endif
+    if (debugFile != (FILE *) 0)
+      fprintf(debugFile, ">(%i,%i)", *pointerX, *pointerY);
+
     
     // Nothing can be previous of himself except initial point
     if (*pointerX == Grid[*pointerX][*pointerY].prevX && *pointerY == Grid[*pointerX][*pointerY].prevY)
@@ -811,11 +821,11 @@ void cellCarvePassage(int prevX, int prevY, int direction) {
   // Set new depth
   Grid[x][y].depth = Grid[prevX][prevY].depth + 1;
 
-  #ifdef DEBUG
-  printf("[from(%i, %i):%i]", Grid[x][y].prevX, Grid[x][y].prevY, Grid[Grid[x][y].prevX][Grid[x][y].prevY].depth);
-  printf("\tto(%i, %i):%i ", x, y, Grid[x][y].depth);
-  printf("\n");
-  #endif
+  if (debugFile != (FILE *) 0) {
+    fprintf(debugFile, "[from(%i, %i):%i]", Grid[x][y].prevX, Grid[x][y].prevY, Grid[Grid[x][y].prevX][Grid[x][y].prevY].depth);
+    fprintf(debugFile, "\tto(%i, %i):%i ", x, y, Grid[x][y].depth);
+    fprintf(debugFile, "\n");
+  }
 }
 
 /*
