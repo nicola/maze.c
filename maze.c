@@ -273,7 +273,7 @@ void drawMarkers(struct coords * ptrInitial, struct coords * ptrFinal) {
   setColour(Solution.file, red);
   setColour(Maze.file, magenta);
   // GAME == 2 means that it will fill the finalPoint when playing ESCAPE_GAME
-  if (GAME != ESCAPE_GAME) fillCell(1, ptrFinal->x, ptrFinal->y);
+  if (GAME != ESCAPE_GAME) fillCell(0, ptrFinal->x, ptrFinal->y);
 }
 
 
