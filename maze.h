@@ -3,6 +3,7 @@
 
 // Common - functions
 void evaluateCommandLine(int, char *arg[]);
+bool isNumeric(char*);
 char * timeString();
 void usage();
 

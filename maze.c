@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
   prepareForDrawing();
   mazeDraw();
 
-  if (!SILENTMODE) {
+  if (!SILENTMODE) { 
     char command[60];
     sprintf(command, "cat %s | java -jar drawapp.jar", Maze.name);
     system(command);
@@ -98,6 +98,14 @@ int main(int argc, char *argv[]) {
  *  -------------------------------
  *  Take commands from input and extract information the program needs and evaluate them
  */
+
+void saveIfNumeric(int * ptrSetting, char * argInput) {
+  if (!isNumeric(argInput)) {
+    printf("\nmaze: *** Invalid character, use only int when <int> is required.  Stop.\n\n", SIZEY);
+    usage(); // This exits
+  }
+  *ptrSetting = atoi(argInput);
+}
 void evaluateCommandLine(int argc, char *argv[]) {
   // If no input, suggest to ask for help
    if (!argv[1]) printf("Type \"-h\" for information on available commands.\n");
@@ -105,10 +113,10 @@ void evaluateCommandLine(int argc, char *argv[]) {
    // Looping for command line inputs
    while ((argc > 1) && (argv[1][0] == '-')) {
      switch (argv[1][1]) {
-       case 'x': SIZEX = atoi(&argv[1][2]); break;
-       case 'y': SIZEY = atoi(&argv[1][2]); break;
-       case 'l': LEVEL = atoi(&argv[1][2]); break;
-       case 'g': GAME = atoi(&argv[1][2]); break;
+       case 'x': saveIfNumeric(&SIZEX, &argv[1][2]); break;
+       case 'y': saveIfNumeric(&SIZEY, &argv[1][2]); break;
+       case 'l': saveIfNumeric(&LEVEL, &argv[1][2]); break;
+       case 'g': saveIfNumeric(&GAME, &argv[1][2]); break;
        case 'h': usage(); break;
        case 's': SILENTMODE = true; break;
        default:
@@ -167,6 +175,17 @@ void evaluateCommandLine(int argc, char *argv[]) {
   printf("Vertical cells: %i\n", SIZEY);
   printf("Difficulty: %i\n", LEVEL);
   printf("Game: %i\n", GAME);
+}
+
+bool isNumeric (char *ptrChar) {
+  if (*ptrChar) {
+    char character;
+    while ( (character = * ptrChar++) ) {
+      if (!isdigit(character)) return 0;
+    }
+    return 1;
+  }
+  return 0;
 }
 
 /*
